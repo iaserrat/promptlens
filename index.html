@@ -596,61 +596,116 @@
         API key (used for the cheap LLM call that scores each prompt).
       </p>
 
-      <div class="space-y-8">
-        <!-- Step 1 -->
-        <div>
-          <div class="flex items-center gap-3 mb-3">
-            <span class="font-mono text-cyan-400 text-sm font-bold">1.</span>
-            <span class="text-neutral-100 font-medium text-sm"
-              >Clone & install</span
-            >
+      <!-- Recommended: Copy prompt -->
+      <div class="border border-cyan-400/30 bg-cyan-400/5 rounded-lg p-5 mb-10">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="font-mono text-cyan-400 text-xs font-bold px-2 py-0.5 border border-cyan-400/40 rounded">RECOMMENDED</span>
+          <h3 class="text-neutral-100 font-medium text-sm">
+            Install via Claude Code
+          </h3>
+        </div>
+        <p class="text-neutral-400 text-sm mb-4">
+          Copy this prompt, paste it into a Claude Code session, and it will set
+          everything up for you. You'll just need to provide your OpenRouter API
+          key when asked.
+        </p>
+        <div class="flex items-start gap-4">
+          <div
+            class="flex-1 bg-neutral-950 border border-neutral-800 rounded p-4 font-mono text-xs text-neutral-400 leading-relaxed max-h-40 overflow-y-auto"
+            id="install-prompt"
+          >
+            Install promptlens for me. Here's what to do: 1. Check if bun is
+            installed by running `which bun`. If it's not found, install it with:
+            curl -fsSL https://bun.sh/install | bash — then make sure it's
+            available in the current shell. 2. Clone the repo into
+            ~/.claude/hooks/promptlens: git clone
+            https://github.com/iaserrat/promptlens ~/.claude/hooks/promptlens 3.
+            Run `bun install` in that directory, then `bun link` to make the
+            `promptlens` command available globally. 4. Create the file
+            ~/.claude/hooks/promptlens/.env with a placeholder:
+            OPENROUTER_API_KEY=paste-your-key-here Then open it in my default text
+            editor (use `open` on macOS or `xdg-open` on Linux) so I can paste my
+            OpenRouter API key securely. Wait for me to confirm I've saved the
+            file before continuing. 5. Add this hook to my ~/.claude/settings.json
+            (merge with existing hooks if any). IMPORTANT: use $HOME instead of ~
+            in the command string, because bun's --env-file flag does not expand
+            tilde: { "hooks": { "UserPromptSubmit": [
+            { "hooks": [ { "type": "command", "command":
+            "bun --env-file=$HOME/.claude/hooks/promptlens/.env run
+            $HOME/.claude/hooks/promptlens/hook.ts", "async": true } ] } ] } }
           </div>
-          <div class="bg-neutral-900 border border-neutral-800 rounded-lg">
-            <pre
-              class="p-4 font-mono text-sm overflow-x-auto"
-            ><code><span class="text-green-400">$</span> <span class="text-neutral-200">git clone https://github.com/iaserrat/promptlens ~/.claude/hooks/promptlens</span>
+          <button
+            id="copy-prompt-btn"
+            onclick="copyInstallPrompt()"
+            class="font-mono text-sm px-4 py-2 bg-cyan-400 text-neutral-950 font-semibold rounded hover:bg-cyan-300 transition-colors shrink-0 min-w-[130px] text-center"
+          >
+            Copy prompt
+          </button>
+        </div>
+      </div>
+
+      <!-- Manual install -->
+      <details class="group">
+        <summary class="cursor-pointer font-mono text-sm text-neutral-400 hover:text-neutral-200 transition-colors mb-6 list-none flex items-center gap-2">
+          <span class="text-neutral-500 group-open:rotate-90 transition-transform inline-block">&#9656;</span>
+          Or install manually
+        </summary>
+
+        <div class="space-y-8">
+          <!-- Step 1 -->
+          <div>
+            <div class="flex items-center gap-3 mb-3">
+              <span class="font-mono text-cyan-400 text-sm font-bold">1.</span>
+              <span class="text-neutral-100 font-medium text-sm"
+                >Clone & install</span
+              >
+            </div>
+            <div class="bg-neutral-900 border border-neutral-800 rounded-lg">
+              <pre
+                class="p-4 font-mono text-sm overflow-x-auto"
+              ><code><span class="text-green-400">$</span> <span class="text-neutral-200">git clone https://github.com/iaserrat/promptlens ~/.claude/hooks/promptlens</span>
 <span class="text-green-400">$</span> <span class="text-neutral-200">cd ~/.claude/hooks/promptlens</span>
 <span class="text-green-400">$</span> <span class="text-neutral-200">bun install</span>
 <span class="text-green-400">$</span> <span class="text-neutral-200">bun link</span>    <span class="text-neutral-500"># makes `promptlens` available globally</span></code></pre>
+            </div>
           </div>
-        </div>
 
-        <!-- Step 2 -->
-        <div>
-          <div class="flex items-center gap-3 mb-3">
-            <span class="font-mono text-cyan-400 text-sm font-bold">2.</span>
-            <span class="text-neutral-100 font-medium text-sm"
-              >Add your OpenRouter key</span
-            >
-          </div>
-          <div class="bg-neutral-900 border border-neutral-800 rounded-lg">
-            <pre
-              class="p-4 font-mono text-sm overflow-x-auto"
-            ><code><span class="text-neutral-500"># Create ~/.claude/hooks/promptlens/.env</span>
+          <!-- Step 2 -->
+          <div>
+            <div class="flex items-center gap-3 mb-3">
+              <span class="font-mono text-cyan-400 text-sm font-bold">2.</span>
+              <span class="text-neutral-100 font-medium text-sm"
+                >Add your OpenRouter key</span
+              >
+            </div>
+            <div class="bg-neutral-900 border border-neutral-800 rounded-lg">
+              <pre
+                class="p-4 font-mono text-sm overflow-x-auto"
+              ><code><span class="text-neutral-500"># Create ~/.claude/hooks/promptlens/.env</span>
 <span class="text-amber-400">OPENROUTER_API_KEY</span><span class="text-neutral-200">=sk-or-...</span>
 <span class="text-amber-400">OPENROUTER_MODEL</span><span class="text-neutral-200">=anthropic/claude-haiku-4.5</span>    <span class="text-neutral-500"># optional, this is the default</span>
 <span class="text-amber-400">PROMPTLENS_MIN_LENGTH</span><span class="text-neutral-200">=50</span><span class="text-neutral-500"># optional, min chars to analyze</span></code></pre>
+            </div>
           </div>
-        </div>
 
-        <!-- Step 3 -->
-        <div>
-          <div class="flex items-center gap-3 mb-3">
-            <span class="font-mono text-cyan-400 text-sm font-bold">3.</span>
-            <span class="text-neutral-100 font-medium text-sm"
-              >Register the hook in Claude Code</span
-            >
-          </div>
-          <p class="text-neutral-500 text-xs mb-3">
-            Add this to
-            <code
-              class="text-amber-400 bg-neutral-800 px-1.5 py-0.5 rounded text-xs"
-              >~/.claude/settings.json</code
-            >
-            (or your project-level settings):
-          </p>
-          <div class="bg-neutral-900 border border-neutral-800 rounded-lg">
-            <pre class="p-4 font-mono text-sm overflow-x-auto"><code>{
+          <!-- Step 3 -->
+          <div>
+            <div class="flex items-center gap-3 mb-3">
+              <span class="font-mono text-cyan-400 text-sm font-bold">3.</span>
+              <span class="text-neutral-100 font-medium text-sm"
+                >Register the hook in Claude Code</span
+              >
+            </div>
+            <p class="text-neutral-500 text-xs mb-3">
+              Add this to
+              <code
+                class="text-amber-400 bg-neutral-800 px-1.5 py-0.5 rounded text-xs"
+                >~/.claude/settings.json</code
+              >
+              (or your project-level settings):
+            </p>
+            <div class="bg-neutral-900 border border-neutral-800 rounded-lg">
+              <pre class="p-4 font-mono text-sm overflow-x-auto"><code>{
   <span class="text-cyan-400">"hooks"</span>: {
     <span class="text-cyan-400">"UserPromptSubmit"</span>: [
       {
@@ -665,72 +720,29 @@
     ]
   }
 }</code></pre>
+            </div>
           </div>
-        </div>
 
-        <!-- Step 4 -->
-        <div>
-          <div class="flex items-center gap-3 mb-3">
-            <span class="font-mono text-cyan-400 text-sm font-bold">4.</span>
-            <span class="text-neutral-100 font-medium text-sm"
-              >Open the dashboard</span
-            >
-          </div>
-          <div class="bg-neutral-900 border border-neutral-800 rounded-lg">
-            <pre
-              class="p-4 font-mono text-sm overflow-x-auto"
-            ><code><span class="text-green-400">$</span> <span class="text-neutral-200">promptlens</span></code></pre>
-          </div>
-          <p class="text-neutral-500 text-xs mt-2">
-            Start using Claude Code as normal. Analyses appear in the dashboard
-            automatically.
-          </p>
-        </div>
-      </div>
-
-      <!-- Copy prompt shortcut -->
-      <div class="mt-12 border border-neutral-800 rounded-lg p-5">
-        <div class="flex items-start justify-between gap-4 mb-3">
+          <!-- Step 4 -->
           <div>
-            <h3 class="text-neutral-100 font-medium text-sm">
-              Or just paste this into Claude Code
-            </h3>
-            <p class="text-neutral-500 text-xs mt-1">
-              Copy the prompt below, paste it into a Claude Code session, and it
-              will set everything up for you. You'll just need to provide your
-              OpenRouter API key when asked.
+            <div class="flex items-center gap-3 mb-3">
+              <span class="font-mono text-cyan-400 text-sm font-bold">4.</span>
+              <span class="text-neutral-100 font-medium text-sm"
+                >Open the dashboard</span
+              >
+            </div>
+            <div class="bg-neutral-900 border border-neutral-800 rounded-lg">
+              <pre
+                class="p-4 font-mono text-sm overflow-x-auto"
+              ><code><span class="text-green-400">$</span> <span class="text-neutral-200">promptlens</span></code></pre>
+            </div>
+            <p class="text-neutral-500 text-xs mt-2">
+              Start using Claude Code as normal. Analyses appear in the dashboard
+              automatically.
             </p>
           </div>
-          <button
-            id="copy-prompt-btn"
-            onclick="copyInstallPrompt()"
-            class="font-mono text-xs px-3 py-1.5 bg-cyan-400 text-neutral-950 font-semibold rounded hover:bg-cyan-300 transition-colors shrink-0"
-          >
-            Copy prompt
-          </button>
         </div>
-        <div
-          class="bg-neutral-950 border border-neutral-800 rounded p-4 font-mono text-xs text-neutral-400 leading-relaxed max-h-40 overflow-y-auto"
-          id="install-prompt"
-        >
-          Install promptlens for me. Here's what to do: 1. Clone the repo into
-          ~/.claude/hooks/promptlens: git clone
-          https://github.com/iaserrat/promptlens ~/.claude/hooks/promptlens 2.
-          Run `bun install` in that directory, then `bun link` to make the
-          `promptlens` command available globally. 3. Create the file
-          ~/.claude/hooks/promptlens/.env with a placeholder:
-          OPENROUTER_API_KEY=paste-your-key-here Then open it in my default text
-          editor (use `open` on macOS or `xdg-open` on Linux) so I can paste my
-          OpenRouter API key securely. Wait for me to confirm I've saved the
-          file before continuing. 4. Add this hook to my ~/.claude/settings.json
-          (merge with existing hooks if any). IMPORTANT: use $HOME instead of ~
-          in the command string, because bun's --env-file flag does not expand
-          tilde: { "hooks": { "UserPromptSubmit": [
-          { "hooks": [ { "type": "command", "command":
-          "bun --env-file=$HOME/.claude/hooks/promptlens/.env run
-          $HOME/.claude/hooks/promptlens/hook.ts", "async": true } ] } ] } }
-        </div>
-      </div>
+      </details>
     </section>
 
     <script>
