@@ -50,7 +50,7 @@ Add this to your Claude Code hooks config (`~/.claude/settings.json` or project-
         "hooks": [
           {
             "type": "command",
-            "command": "bun --env-file=~/.claude/hooks/promptlens/.env run ~/.claude/hooks/promptlens/hook.ts",
+            "command": "bun --env-file=$HOME/.claude/hooks/promptlens/.env run $HOME/.claude/hooks/promptlens/hook.ts",
             "async": true
           }
         ]

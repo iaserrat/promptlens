@@ -657,7 +657,7 @@
         <span class="text-cyan-400">"hooks"</span>: [
           {
             <span class="text-cyan-400">"type"</span>: <span class="text-green-400">"command"</span>,
-            <span class="text-cyan-400">"command"</span>: <span class="text-green-400">"bun --env-file=~/.claude/hooks/promptlens/.env run ~/.claude/hooks/promptlens/hook.ts"</span>,
+            <span class="text-cyan-400">"command"</span>: <span class="text-green-400">"bun --env-file=$HOME/.claude/hooks/promptlens/.env run $HOME/.claude/hooks/promptlens/hook.ts"</span>,
             <span class="text-cyan-400">"async"</span>: <span class="text-amber-400">true</span>
           }
         ]
@@ -723,10 +723,12 @@
           editor (use `open` on macOS or `xdg-open` on Linux) so I can paste my
           OpenRouter API key securely. Wait for me to confirm I've saved the
           file before continuing. 4. Add this hook to my ~/.claude/settings.json
-          (merge with existing hooks if any): { "hooks": { "UserPromptSubmit": [
+          (merge with existing hooks if any). IMPORTANT: use $HOME instead of ~
+          in the command string, because bun's --env-file flag does not expand
+          tilde: { "hooks": { "UserPromptSubmit": [
           { "hooks": [ { "type": "command", "command":
-          "bun --env-file=~/.claude/hooks/promptlens/.env run
-          ~/.claude/hooks/promptlens/hook.ts", "async": true } ] } ] } }
+          "bun --env-file=$HOME/.claude/hooks/promptlens/.env run
+          $HOME/.claude/hooks/promptlens/hook.ts", "async": true } ] } ] } }
         </div>
       </div>
     </section>
