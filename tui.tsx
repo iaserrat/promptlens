@@ -430,6 +430,7 @@ function ProjectsPanel({
 
   return (
     <Panel title="Projects" width={width}>
+      <Box flexDirection="column" gap={1}>
       {projects.slice(0, height - 3).map((p) => {
         const name = p.project.split("/").filter(Boolean).pop() ?? p.project;
         const filled = Math.round((p.count / maxCount) * barWidth);
@@ -447,6 +448,7 @@ function ProjectsPanel({
           </Box>
         );
       })}
+      </Box>
     </Panel>
   );
 }
@@ -471,7 +473,8 @@ function CategoryPanel({
       {stats.categories.length === 0 ? (
         <Text dimColor>No data</Text>
       ) : (
-        stats.categories.slice(0, height - 3).map((c) => {
+        <Box flexDirection="column" gap={1}>
+        {stats.categories.slice(0, height - 3).map((c) => {
           const filled = Math.round((c.count / maxCount) * barWidth);
           const empty = barWidth - filled;
           return (
@@ -484,7 +487,8 @@ function CategoryPanel({
               <Text bold>{String(c.count).padStart(3)}</Text>
             </Box>
           );
-        })
+        })}
+        </Box>
       )}
     </Panel>
   );
@@ -514,6 +518,7 @@ function ScoreDistribution({
 
   return (
     <Panel title="Score Distribution" width={width}>
+      <Box flexDirection="column" gap={1}>
       {buckets.map((count, i) => {
         const score = i + 1;
         const barLen = Math.round((count / max) * barMax);
@@ -530,6 +535,7 @@ function ScoreDistribution({
           </Box>
         );
       })}
+      </Box>
     </Panel>
   );
 }
@@ -557,6 +563,7 @@ function ComplexityPanel({
 
   return (
     <Panel title="Complexity" width={width}>
+      <Box flexDirection="column" gap={1}>
       {(["low", "medium", "high"] as const).map((level) => {
         const pct = Math.round((counts[level] / total) * 100);
         return (
@@ -567,6 +574,7 @@ function ComplexityPanel({
           </Box>
         );
       })}
+      </Box>
     </Panel>
   );
 }
@@ -1138,7 +1146,7 @@ function App() {
           />
         )}
 
-        <Box flexDirection="column" width={sidebarW}>
+        <Box flexDirection="column" width={sidebarW} gap={1}>
           <ProjectsPanel
             projects={projectStats}
             width={sidebarW}
