@@ -7,13 +7,16 @@ import {
   getStats,
   getProjectStats,
   getSessionCount,
+  getDailyTrends,
   deleteAnalysis,
   deleteAllAnalyses,
   type Analysis,
   type Stats,
   type ProjectStat,
+  type DailyTrend,
 } from "./db";
 import type { Database } from "bun:sqlite";
+import { LineGraph, Sparkline, BarChart } from "@pppp606/ink-chart";
 
 const POLL_MS = 1500;
 
@@ -23,6 +26,7 @@ const initAnalyses = getRecent(initDb, 200);
 const initStats = getStats(initDb);
 const initProjectStats = getProjectStats(initDb);
 const initSessionCount = getSessionCount(initDb);
+const initTrends = getDailyTrends(initDb);
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -97,7 +101,8 @@ type KeyAction =
   | { type: "filterProject" }
   | { type: "filterCategory" }
   | { type: "filterSession" }
-  | { type: "toggleGrouping" };
+  | { type: "toggleGrouping" }
+  | { type: "switchTab" };
 
 interface Filters {
   project: string | null;
@@ -146,6 +151,7 @@ function KeyboardHandler({ onAction }: { onAction: (a: KeyAction) => void }) {
     else if (input === "c") onAction({ type: "filterCategory" });
     else if (input === "f") onAction({ type: "filterSession" });
     else if (input === "g") onAction({ type: "toggleGrouping" });
+    else if (key.tab) onAction({ type: "switchTab" });
     else if (input === "?") onAction({ type: "help" });
     else if (key.return || input === "y") onAction({ type: "confirm" });
     else if (key.escape || input === "n") onAction({ type: "cancel" });
@@ -819,6 +825,7 @@ function HelpOverlay({ width, height }: { width: number; height: number }) {
     ["c", "Cycle category filter"],
     ["f", "Cycle session filter"],
     ["g", "Toggle session grouping"],
+    ["Tab", "Switch tab"],
     ["Esc", "Clear all filters"],
     ["d", "Delete selected entry"],
     ["D", "Delete ALL entries (reset)"],
@@ -828,35 +835,30 @@ function HelpOverlay({ width, height }: { width: number; height: number }) {
   ];
 
   return (
-    <Box
-      position="absolute"
-      marginLeft={left}
-      marginTop={top}
-      width={w}
-      height={h}
-      flexDirection="column"
-      borderStyle="double"
-      borderColor="cyan"
-      paddingX={2}
-      paddingY={1}
-    >
-      <Box marginTop={-2} marginLeft={1}>
+    <Box justifyContent="center" alignItems="center" width={width} height={height - 8}>
+      <Box
+        width={w}
+        flexDirection="column"
+        borderStyle="double"
+        borderColor="cyan"
+        paddingX={2}
+        paddingY={1}
+      >
         <Text color="cyan" bold>
-          {" "}
-          Keyboard Shortcuts{" "}
+          Keyboard Shortcuts
         </Text>
+        <Text> </Text>
+        {bindings.map(([key, desc]) => (
+          <Box key={key} gap={1}>
+            <Text bold color="yellow">
+              {pad(key, 6)}
+            </Text>
+            <Text>{desc}</Text>
+          </Box>
+        ))}
+        <Text> </Text>
+        <Text dimColor>Press ? or Esc to close</Text>
       </Box>
-      <Text> </Text>
-      {bindings.map(([key, desc]) => (
-        <Box key={key} gap={1}>
-          <Text bold color="yellow">
-            {pad(key, 6)}
-          </Text>
-          <Text>{desc}</Text>
-        </Box>
-      ))}
-      <Text> </Text>
-      <Text dimColor>Press ? or Esc to close</Text>
     </Box>
   );
 }
@@ -877,32 +879,30 @@ function ConfirmDialog({
   const top = Math.floor((height - 6) / 2);
 
   return (
-    <Box
-      position="absolute"
-      marginLeft={left}
-      marginTop={top}
-      width={w}
-      height={5}
-      flexDirection="column"
-      borderStyle="double"
-      borderColor="red"
-      paddingX={2}
-    >
-      <Text bold color="red">
-        {message}
-      </Text>
-      <Text> </Text>
-      <Text>
-        Press{" "}
-        <Text bold color="green">
-          y/Enter
-        </Text>{" "}
-        to confirm,{" "}
-        <Text bold color="yellow">
-          n/Esc
-        </Text>{" "}
-        to cancel
-      </Text>
+    <Box justifyContent="center" alignItems="center" width={width} height={height - 8}>
+      <Box
+        width={w}
+        flexDirection="column"
+        borderStyle="double"
+        borderColor="red"
+        paddingX={2}
+      >
+        <Text bold color="red">
+          {message}
+        </Text>
+        <Text> </Text>
+        <Text>
+          Press{" "}
+          <Text bold color="green">
+            y/Enter
+          </Text>{" "}
+          to confirm,{" "}
+          <Text bold color="yellow">
+            n/Esc
+          </Text>{" "}
+          to cancel
+        </Text>
+      </Box>
     </Box>
   );
 }
@@ -919,11 +919,125 @@ function Footer({ width, lastRefresh }: { width: number; lastRefresh: Date }) {
       justifyContent="space-between"
     >
       <Text dimColor>
-        ↑↓ navigate p project c category f session g group d del ? help q quit
+        ↑↓ navigate Tab switch view p project c category f session g group d del ? help q quit
       </Text>
       <Text dimColor>
         {lastRefresh.toLocaleTimeString()} │ {POLL_MS / 1000}s poll
       </Text>
+    </Box>
+  );
+}
+
+// ── Tab Bar ─────────────────────────────────────────────────────────
+
+type Tab = "dashboard" | "trends";
+
+function TabBar({ active, width }: { active: Tab; width: number }) {
+  const tabs: { key: Tab; label: string }[] = [
+    { key: "dashboard", label: "Dashboard" },
+    { key: "trends", label: "Trends" },
+  ];
+
+  return (
+    <Box width={width} paddingX={1}>
+      {tabs.map((t, i) => {
+        const isActive = active === t.key;
+        return (
+          <React.Fragment key={t.key}>
+            {i > 0 && <Text dimColor> │ </Text>}
+            <Text
+              bold={isActive}
+              color={isActive ? "cyan" : "gray"}
+              underline={isActive}
+            >
+              {isActive ? `▸ ${t.label}` : `  ${t.label}`}
+            </Text>
+          </React.Fragment>
+        );
+      })}
+      <Text dimColor>  ⇥ Tab to switch</Text>
+    </Box>
+  );
+}
+
+// ── Trends View ─────────────────────────────────────────────────────
+
+function TrendsView({
+  trends,
+  analyses,
+  width,
+  height,
+}: {
+  trends: DailyTrend[];
+  analyses: Analysis[];
+  width: number;
+  height: number;
+}) {
+  if (trends.length === 0) {
+    return (
+      <Panel title="Trends" width={width}>
+        <Box
+          height={height - 4}
+          alignItems="center"
+          justifyContent="center"
+        >
+          <Text dimColor>
+            No trend data yet. Submit prompts over multiple days to see trends.
+          </Text>
+        </Box>
+      </Panel>
+    );
+  }
+
+  const scores = trends.map((t) => t.avg_score);
+  const counts = trends.map((t) => t.count);
+  const xLabels = trends.map((t) => t.day.slice(5)); // MM-DD
+  const graphWidth = Math.max(20, width - 8);
+  const graphHeight = Math.max(3, Math.floor((height - 12) / 3));
+
+  // Category breakdown for bar chart
+  const catCounts = new Map<string, number>();
+  for (const a of analyses) {
+    if (a.category) {
+      catCounts.set(a.category, (catCounts.get(a.category) ?? 0) + 1);
+    }
+  }
+  const catData = [...catCounts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8)
+    .map(([label, value]) => ({ label, value, color: "magenta" as const }));
+
+  return (
+    <Box flexDirection="column" width={width} gap={1}>
+      <Panel title="Quality Score Over Time" width={width}>
+        <LineGraph
+          data={[{ values: scores, color: "green" }]}
+          width={graphWidth}
+          height={graphHeight}
+          xLabels={xLabels}
+          showYAxis
+          yDomain={[0, 10]}
+        />
+      </Panel>
+
+      <Panel title="Prompt Volume Over Time" width={width}>
+        <Sparkline
+          data={counts}
+          width={graphWidth}
+          caption={`${xLabels[0] ?? ""} → ${xLabels[xLabels.length - 1] ?? ""}`}
+        />
+      </Panel>
+
+      {catData.length > 0 && (
+        <Panel title="Category Breakdown" width={width}>
+          <BarChart
+            data={catData}
+            width={graphWidth}
+            showValue="right"
+            sort="desc"
+          />
+        </Panel>
+      )}
     </Box>
   );
 }
@@ -943,6 +1057,8 @@ function App() {
   const [projectStats, setProjectStats] =
     useState<ProjectStat[]>(initProjectStats);
   const [sessionCount, setSessionCount] = useState(initSessionCount);
+  const [trends, setTrends] = useState<DailyTrend[]>(initTrends);
+  const [activeTab, setActiveTab] = useState<Tab>("dashboard");
   const [lastRefresh, setLastRefresh] = useState(new Date());
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [modal, setModal] = useState<Modal>("none");
@@ -968,6 +1084,7 @@ function App() {
     setStats(getStats(db));
     setProjectStats(getProjectStats(db));
     setSessionCount(getSessionCount(db));
+    setTrends(getDailyTrends(db));
     setLastRefresh(new Date());
   };
 
@@ -1069,6 +1186,9 @@ function App() {
         setSelectedIdx(0);
         showFlash(grouped ? "Grouping off" : "Grouped by session");
         break;
+      case "switchTab":
+        setActiveTab((t) => (t === "dashboard" ? "trends" : "dashboard"));
+        break;
       case "cancel":
         if (hasActiveFilters(filters) || grouped) {
           setFilters(emptyFilters);
@@ -1113,6 +1233,9 @@ function App() {
       {/* Top stats bar */}
       <StatsBar stats={stats} sessionCount={sessionCount} width={columns} />
 
+      {/* Tab bar */}
+      <TabBar active={activeTab} width={columns} />
+
       {/* Flash message */}
       {flash && (
         <Box paddingX={1}>
@@ -1122,65 +1245,81 @@ function App() {
         </Box>
       )}
 
-      {/* Filter bar */}
-      <FilterBar filters={filters} grouped={grouped} width={columns} />
-
-      {/* Detail bar for selected entry */}
-      <DetailBar analysis={analyses[selectedIdx]} width={columns} />
-
-      {/* Main content area */}
-      <Box flexGrow={1}>
-        {grouped ? (
-          <GroupedTable
-            analyses={analyses}
-            height={tableH - 1}
-            width={mainW}
-            selectedIdx={selectedIdx}
-          />
-        ) : (
-          <RecentTable
-            analyses={analyses}
-            height={tableH - 1}
-            width={mainW}
-            selectedIdx={selectedIdx}
-          />
-        )}
-
-        <Box flexDirection="column" width={sidebarW} gap={1}>
-          <ProjectsPanel
-            projects={projectStats}
-            width={sidebarW}
-            height={Math.floor(catH * 0.5)}
-          />
-          <CategoryPanel
-            stats={stats}
-            width={sidebarW}
-            height={Math.floor(catH * 0.5)}
-          />
-          <ScoreDistribution analyses={analyses} width={sidebarW} />
-          <ComplexityPanel analyses={analyses} width={sidebarW} />
+      {modal === "help" ? (
+        <Box flexGrow={1}>
+          <HelpOverlay width={columns} height={rows} />
         </Box>
-      </Box>
+      ) : modal === "confirmDelete" ? (
+        <Box flexGrow={1}>
+          <ConfirmDialog
+            message={`Delete entry #${analyses[selectedIdx]?.id ?? "?"}?`}
+            width={columns}
+            height={rows}
+          />
+        </Box>
+      ) : modal === "confirmDeleteAll" ? (
+        <Box flexGrow={1}>
+          <ConfirmDialog
+            message={`Delete ALL ${analyses.length} entries? This cannot be undone.`}
+            width={columns}
+            height={rows}
+          />
+        </Box>
+      ) : activeTab === "dashboard" ? (
+        <>
+          {/* Filter bar */}
+          <FilterBar filters={filters} grouped={grouped} width={columns} />
+
+          {/* Detail bar for selected entry */}
+          <DetailBar analysis={analyses[selectedIdx]} width={columns} />
+
+          {/* Main content area */}
+          <Box flexGrow={1}>
+            {grouped ? (
+              <GroupedTable
+                analyses={analyses}
+                height={tableH - 1}
+                width={mainW}
+                selectedIdx={selectedIdx}
+              />
+            ) : (
+              <RecentTable
+                analyses={analyses}
+                height={tableH - 1}
+                width={mainW}
+                selectedIdx={selectedIdx}
+              />
+            )}
+
+            <Box flexDirection="column" width={sidebarW} gap={1}>
+              <ProjectsPanel
+                projects={projectStats}
+                width={sidebarW}
+                height={Math.floor(catH * 0.5)}
+              />
+              <CategoryPanel
+                stats={stats}
+                width={sidebarW}
+                height={Math.floor(catH * 0.5)}
+              />
+              <ScoreDistribution analyses={analyses} width={sidebarW} />
+              <ComplexityPanel analyses={analyses} width={sidebarW} />
+            </Box>
+          </Box>
+        </>
+      ) : (
+        <Box flexGrow={1}>
+          <TrendsView
+            trends={trends}
+            analyses={analyses}
+            width={columns}
+            height={tableH}
+          />
+        </Box>
+      )}
 
       {/* Bottom bar */}
       <Footer width={columns} lastRefresh={lastRefresh} />
-
-      {/* Overlays */}
-      {modal === "help" && <HelpOverlay width={columns} height={rows} />}
-      {modal === "confirmDelete" && (
-        <ConfirmDialog
-          message={`Delete entry #${analyses[selectedIdx]?.id ?? "?"}?`}
-          width={columns}
-          height={rows}
-        />
-      )}
-      {modal === "confirmDeleteAll" && (
-        <ConfirmDialog
-          message={`Delete ALL ${analyses.length} entries? This cannot be undone.`}
-          width={columns}
-          height={rows}
-        />
-      )}
     </Box>
   );
 }

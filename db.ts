@@ -145,6 +145,29 @@ export function getSessionCount(db: Database): number {
   return row.cnt;
 }
 
+export interface DailyTrend {
+  day: string;
+  avg_score: number;
+  count: number;
+}
+
+export function getDailyTrends(db: Database, days = 30): DailyTrend[] {
+  return db
+    .query(
+      `
+      SELECT
+        date(created_at) as day,
+        ROUND(COALESCE(AVG(quality_score), 0), 1) as avg_score,
+        COUNT(*) as count
+      FROM analyses
+      WHERE created_at >= datetime('now', '-' || $days || ' days')
+      GROUP BY date(created_at)
+      ORDER BY day ASC
+    `,
+    )
+    .all({ $days: days }) as DailyTrend[];
+}
+
 export function getStats(db: Database): Stats {
   const totals = db
     .query(
