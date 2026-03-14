@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
     <script>
@@ -19,6 +19,14 @@
               mono: ["JetBrains Mono", "monospace"],
               sans: ["Inter", "sans-serif"],
             },
+            boxShadow: {
+              brutal: "4px 4px 0px 0px currentColor",
+              "brutal-lg": "6px 6px 0px 0px currentColor",
+              "brutal-cyan": "4px 4px 0px 0px #22d3ee",
+              "brutal-green": "4px 4px 0px 0px #4ade80",
+              "brutal-fuchsia": "4px 4px 0px 0px #e879f9",
+              "brutal-amber": "4px 4px 0px 0px #fbbf24",
+            },
           },
         },
       };
@@ -28,11 +36,11 @@
         width: 6px;
       }
       ::-webkit-scrollbar-track {
-        background: #111;
+        background: #0a0a0a;
       }
       ::-webkit-scrollbar-thumb {
-        background: #333;
-        border-radius: 3px;
+        background: #22d3ee;
+        border-radius: 0;
       }
       .tui-preview-wrapper {
         position: relative;
@@ -57,19 +65,35 @@
           overflow: hidden;
         }
       }
+      .neo-card {
+        border: 2px solid #e5e5e5;
+        box-shadow: 4px 4px 0px 0px #e5e5e5;
+      }
+      .neo-btn {
+        border: 2px solid currentColor;
+        box-shadow: 4px 4px 0px 0px currentColor;
+        transition: transform 0.1s, box-shadow 0.1s;
+      }
+      .neo-btn:hover {
+        transform: translate(-2px, -2px);
+        box-shadow: 6px 6px 0px 0px currentColor;
+      }
+      .neo-btn:active {
+        transform: translate(2px, 2px);
+        box-shadow: 0px 0px 0px 0px currentColor;
+      }
     </style>
   </head>
   <body
-    class="bg-neutral-950 text-neutral-300 font-sans antialiased min-h-screen"
+    class="bg-neutral-950 text-neutral-300 font-mono antialiased min-h-screen"
   >
     <!-- Hero -->
     <header class="max-w-3xl mx-auto px-6 pt-20 pb-16">
-      <h1 class="font-mono text-5xl md:text-6xl font-bold tracking-tight mb-6">
-        <span class="text-cyan-400">prompt</span
-        ><span class="text-neutral-100">lens</span>
+      <h1 class="text-4xl md:text-5xl font-black tracking-tight mb-6 uppercase" style="font-family: 'Space Grotesk', sans-serif;">
+        <span class="text-cyan-400">prompt</span><span class="text-neutral-100">lens</span>
       </h1>
 
-      <p class="text-lg text-neutral-400 mt-4 max-w-2xl leading-relaxed">
+      <p class="text-lg text-neutral-400 mt-4 max-w-2xl leading-relaxed border-l-4 border-cyan-400 pl-4">
         Your prompting habits, visualized. A Claude Code hook that scores,
         categorizes, and tracks every prompt you send — with a full-screen
         terminal dashboard to spot patterns and level up.
@@ -78,7 +102,7 @@
       <div class="flex flex-wrap gap-4 mt-10">
         <a
           href="#install"
-          class="font-mono text-sm px-5 py-2.5 bg-cyan-400 text-neutral-950 font-semibold rounded-md hover:bg-cyan-300 transition-colors"
+          class="neo-btn text-sm px-6 py-3 bg-cyan-400 text-neutral-950 font-black uppercase tracking-wide"
         >
           Get started
         </a>
@@ -443,20 +467,20 @@
 
     <!-- How it works -->
     <section class="max-w-3xl mx-auto px-6 pb-20">
-      <h2 class="font-mono text-xl font-bold text-neutral-100 mb-10">
+      <h2 class="text-2xl font-black text-neutral-100 mb-10 uppercase tracking-tight">
         <span class="text-cyan-400">//</span> How it works
       </h2>
 
       <div class="grid md:grid-cols-3 gap-6">
-        <div class="border border-neutral-800 rounded-lg p-5">
-          <div class="font-mono text-cyan-400 text-2xl font-bold mb-3">01</div>
-          <h3 class="font-mono text-neutral-100 font-semibold mb-2 text-sm">
+        <div class="neo-card bg-neutral-900 p-5">
+          <div class="text-cyan-400 text-4xl font-black mb-3">01</div>
+          <h3 class="text-neutral-100 font-bold mb-2 text-sm uppercase tracking-wide">
             You prompt as usual
           </h3>
           <p class="text-neutral-400 text-sm leading-relaxed">
             A
             <code
-              class="text-amber-400 bg-neutral-800 px-1.5 py-0.5 rounded text-xs"
+              class="text-amber-400 bg-neutral-800 px-1.5 py-0.5 border border-amber-400 text-xs"
               >UserPromptSubmit</code
             >
             hook runs silently in the background every time you send a prompt.
@@ -464,9 +488,9 @@
           </p>
         </div>
 
-        <div class="border border-neutral-800 rounded-lg p-5">
-          <div class="font-mono text-green-400 text-2xl font-bold mb-3">02</div>
-          <h3 class="font-mono text-neutral-100 font-semibold mb-2 text-sm">
+        <div class="neo-card bg-neutral-900 p-5">
+          <div class="text-green-400 text-4xl font-black mb-3">02</div>
+          <h3 class="text-neutral-100 font-bold mb-2 text-sm uppercase tracking-wide">
             Each prompt gets scored
           </h3>
           <p class="text-neutral-400 text-sm leading-relaxed">
@@ -476,11 +500,9 @@
           </p>
         </div>
 
-        <div class="border border-neutral-800 rounded-lg p-5">
-          <div class="font-mono text-fuchsia-400 text-2xl font-bold mb-3">
-            03
-          </div>
-          <h3 class="font-mono text-neutral-100 font-semibold mb-2 text-sm">
+        <div class="neo-card bg-neutral-900 p-5">
+          <div class="text-fuchsia-400 text-4xl font-black mb-3">03</div>
+          <h3 class="text-neutral-100 font-bold mb-2 text-sm uppercase tracking-wide">
             Patterns emerge
           </h3>
           <p class="text-neutral-400 text-sm leading-relaxed">
@@ -494,13 +516,13 @@
 
     <!-- Why -->
     <section class="max-w-3xl mx-auto px-6 pb-20">
-      <h2 class="font-mono text-xl font-bold text-neutral-100 mb-10">
+      <h2 class="text-2xl font-black text-neutral-100 mb-10 uppercase tracking-tight">
         <span class="text-green-400">//</span> Why promptlens
       </h2>
 
       <div class="grid md:grid-cols-2 gap-x-10 gap-y-6">
         <div class="flex gap-3">
-          <span class="text-cyan-400 shrink-0">-</span>
+          <span class="text-cyan-400 shrink-0 font-black text-lg">-</span>
           <div>
             <h3 class="text-neutral-100 font-medium text-sm mb-1">
               See what you're actually asking
@@ -512,7 +534,7 @@
           </div>
         </div>
         <div class="flex gap-3">
-          <span class="text-fuchsia-400 shrink-0">-</span>
+          <span class="text-fuchsia-400 shrink-0 font-black text-lg">-</span>
           <div>
             <h3 class="text-neutral-100 font-medium text-sm mb-1">
               Understand your work patterns
@@ -524,7 +546,7 @@
           </div>
         </div>
         <div class="flex gap-3">
-          <span class="text-green-400 shrink-0">-</span>
+          <span class="text-green-400 shrink-0 font-black text-lg">-</span>
           <div>
             <h3 class="text-neutral-100 font-medium text-sm mb-1">
               Compare across projects
@@ -536,7 +558,7 @@
           </div>
         </div>
         <div class="flex gap-3">
-          <span class="text-amber-400 shrink-0">-</span>
+          <span class="text-amber-400 shrink-0 font-black text-lg">-</span>
           <div>
             <h3 class="text-neutral-100 font-medium text-sm mb-1">
               Zero friction
@@ -548,7 +570,7 @@
           </div>
         </div>
         <div class="flex gap-3">
-          <span class="text-blue-400 shrink-0">-</span>
+          <span class="text-blue-400 shrink-0 font-black text-lg">-</span>
           <div>
             <h3 class="text-neutral-100 font-medium text-sm mb-1">
               Local storage, your data
@@ -560,7 +582,7 @@
           </div>
         </div>
         <div class="flex gap-3">
-          <span class="text-red-400 shrink-0">-</span>
+          <span class="text-red-400 shrink-0 font-black text-lg">-</span>
           <div>
             <h3 class="text-neutral-100 font-medium text-sm mb-1">
               Handles images too
@@ -576,7 +598,7 @@
 
     <!-- Install -->
     <section id="install" class="max-w-3xl mx-auto px-6 pb-20">
-      <h2 class="font-mono text-xl font-bold text-neutral-100 mb-10">
+      <h2 class="text-2xl font-black text-neutral-100 mb-10 uppercase tracking-tight">
         <span class="text-fuchsia-400">//</span> Get started
       </h2>
 
@@ -597,9 +619,9 @@
       </p>
 
       <!-- Recommended: Copy prompt -->
-      <div class="border border-cyan-400/30 bg-cyan-400/5 rounded-lg p-5 mb-10">
+      <div class="border-2 border-cyan-400 bg-cyan-400/5 p-5 mb-10" style="box-shadow: 4px 4px 0px 0px #22d3ee;">
         <div class="flex items-center gap-2 mb-3">
-          <span class="font-mono text-cyan-400 text-xs font-bold px-2 py-0.5 border border-cyan-400/40 rounded">RECOMMENDED</span>
+          <span class="text-cyan-400 text-xs font-black px-2 py-0.5 border-2 border-cyan-400 uppercase">RECOMMENDED</span>
           <h3 class="text-neutral-100 font-medium text-sm">
             Install via Claude Code
           </h3>
@@ -611,7 +633,7 @@
         </p>
         <div class="flex items-start gap-4">
           <div
-            class="flex-1 bg-neutral-950 border border-neutral-800 rounded p-4 font-mono text-xs text-neutral-400 leading-relaxed max-h-40 overflow-y-auto"
+            class="flex-1 bg-neutral-950 border-2 border-neutral-200 p-4 font-mono text-xs text-neutral-400 leading-relaxed max-h-40 overflow-y-auto"
             id="install-prompt"
           >
             Install promptlens for me. Here's what to do: 1. Check if bun is
@@ -637,7 +659,7 @@
           <button
             id="copy-prompt-btn"
             onclick="copyInstallPrompt()"
-            class="font-mono text-sm px-4 py-2 bg-cyan-400 text-neutral-950 font-semibold rounded hover:bg-cyan-300 transition-colors shrink-0 min-w-[130px] text-center"
+            class="neo-btn font-mono text-sm px-4 py-2 bg-cyan-400 text-neutral-950 font-black uppercase shrink-0 min-w-[130px] text-center"
           >
             Copy prompt
           </button>
@@ -660,7 +682,7 @@
                 >Clone & install</span
               >
             </div>
-            <div class="bg-neutral-900 border border-neutral-800 rounded-lg">
+            <div class="bg-neutral-900 border-2 border-neutral-600">
               <pre
                 class="p-4 font-mono text-sm overflow-x-auto"
               ><code><span class="text-green-400">$</span> <span class="text-neutral-200">git clone https://github.com/iaserrat/promptlens ~/.claude/hooks/promptlens</span>
@@ -678,7 +700,7 @@
                 >Add your OpenRouter key</span
               >
             </div>
-            <div class="bg-neutral-900 border border-neutral-800 rounded-lg">
+            <div class="bg-neutral-900 border-2 border-neutral-600">
               <pre
                 class="p-4 font-mono text-sm overflow-x-auto"
               ><code><span class="text-neutral-500"># Create ~/.claude/hooks/promptlens/.env</span>
@@ -699,12 +721,12 @@
             <p class="text-neutral-500 text-xs mb-3">
               Add this to
               <code
-                class="text-amber-400 bg-neutral-800 px-1.5 py-0.5 rounded text-xs"
+                class="text-amber-400 bg-neutral-800 px-1.5 py-0.5 border border-amber-400 text-xs"
                 >~/.claude/settings.json</code
               >
               (or your project-level settings):
             </p>
-            <div class="bg-neutral-900 border border-neutral-800 rounded-lg">
+            <div class="bg-neutral-900 border-2 border-neutral-600">
               <pre class="p-4 font-mono text-sm overflow-x-auto"><code>{
   <span class="text-cyan-400">"hooks"</span>: {
     <span class="text-cyan-400">"UserPromptSubmit"</span>: [
@@ -731,7 +753,7 @@
                 >Open the dashboard</span
               >
             </div>
-            <div class="bg-neutral-900 border border-neutral-800 rounded-lg">
+            <div class="bg-neutral-900 border-2 border-neutral-600">
               <pre
                 class="p-4 font-mono text-sm overflow-x-auto"
               ><code><span class="text-green-400">$</span> <span class="text-neutral-200">promptlens</span></code></pre>
@@ -769,55 +791,55 @@
 
     <!-- Keyboard shortcuts -->
     <section class="max-w-3xl mx-auto px-6 pb-20">
-      <h2 class="font-mono text-xl font-bold text-neutral-100 mb-10">
+      <h2 class="text-2xl font-black text-neutral-100 mb-10 uppercase tracking-tight">
         <span class="text-amber-400">//</span> Keyboard shortcuts
       </h2>
 
       <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div
-          class="bg-neutral-900 border border-neutral-800 rounded-lg p-3 text-center"
+          class="neo-card bg-neutral-900 p-3 text-center"
         >
           <kbd class="font-mono text-amber-400 text-base font-bold">↑ ↓</kbd>
           <p class="text-neutral-400 text-xs mt-1.5">Navigate</p>
         </div>
         <div
-          class="bg-neutral-900 border border-neutral-800 rounded-lg p-3 text-center"
+          class="neo-card bg-neutral-900 p-3 text-center"
         >
           <kbd class="font-mono text-amber-400 text-base font-bold">p</kbd>
           <p class="text-neutral-400 text-xs mt-1.5">Filter project</p>
         </div>
         <div
-          class="bg-neutral-900 border border-neutral-800 rounded-lg p-3 text-center"
+          class="neo-card bg-neutral-900 p-3 text-center"
         >
           <kbd class="font-mono text-amber-400 text-base font-bold">c</kbd>
           <p class="text-neutral-400 text-xs mt-1.5">Filter category</p>
         </div>
         <div
-          class="bg-neutral-900 border border-neutral-800 rounded-lg p-3 text-center"
+          class="neo-card bg-neutral-900 p-3 text-center"
         >
           <kbd class="font-mono text-amber-400 text-base font-bold">g</kbd>
           <p class="text-neutral-400 text-xs mt-1.5">Group sessions</p>
         </div>
         <div
-          class="bg-neutral-900 border border-neutral-800 rounded-lg p-3 text-center"
+          class="neo-card bg-neutral-900 p-3 text-center"
         >
           <kbd class="font-mono text-amber-400 text-base font-bold">f</kbd>
           <p class="text-neutral-400 text-xs mt-1.5">Filter session</p>
         </div>
         <div
-          class="bg-neutral-900 border border-neutral-800 rounded-lg p-3 text-center"
+          class="neo-card bg-neutral-900 p-3 text-center"
         >
           <kbd class="font-mono text-amber-400 text-base font-bold">d</kbd>
           <p class="text-neutral-400 text-xs mt-1.5">Delete entry</p>
         </div>
         <div
-          class="bg-neutral-900 border border-neutral-800 rounded-lg p-3 text-center"
+          class="neo-card bg-neutral-900 p-3 text-center"
         >
           <kbd class="font-mono text-amber-400 text-base font-bold">?</kbd>
           <p class="text-neutral-400 text-xs mt-1.5">Help</p>
         </div>
         <div
-          class="bg-neutral-900 border border-neutral-800 rounded-lg p-3 text-center"
+          class="neo-card bg-neutral-900 p-3 text-center"
         >
           <kbd class="font-mono text-amber-400 text-base font-bold">q</kbd>
           <p class="text-neutral-400 text-xs mt-1.5">Quit</p>
@@ -826,16 +848,15 @@
     </section>
 
     <!-- Footer -->
-    <footer class="border-t border-neutral-800">
+    <footer class="border-t-2 border-neutral-200">
       <div
         class="max-w-3xl mx-auto px-6 py-8 flex flex-col md:flex-row items-center justify-between gap-4"
       >
-        <div class="font-mono text-sm">
-          <span class="text-cyan-400 font-bold">prompt</span
-          ><span class="text-neutral-100 font-bold">lens</span>
-          <span class="text-neutral-500 ml-3">See your prompts clearly.</span>
+        <div class="text-sm font-black uppercase">
+          <span class="text-cyan-400">prompt</span><span class="text-neutral-100">lens</span>
+          <span class="text-neutral-500 ml-3 font-normal normal-case">See your prompts clearly.</span>
         </div>
-        <div class="font-mono text-xs text-neutral-500">
+        <div class="text-xs text-neutral-500">
           Built for Claude Code
         </div>
       </div>
