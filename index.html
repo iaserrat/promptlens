@@ -457,7 +457,7 @@
             A
             <code
               class="text-amber-400 bg-neutral-800 px-1.5 py-0.5 rounded text-xs"
-              >prompt_submit</code
+              >UserPromptSubmit</code
             >
             hook runs silently in the background every time you send a prompt.
             Nothing changes about your workflow.
@@ -652,10 +652,15 @@
           <div class="bg-neutral-900 border border-neutral-800 rounded-lg">
             <pre class="p-4 font-mono text-sm overflow-x-auto"><code>{
   <span class="text-cyan-400">"hooks"</span>: {
-    <span class="text-cyan-400">"prompt_submit"</span>: [
+    <span class="text-cyan-400">"UserPromptSubmit"</span>: [
       {
-        <span class="text-cyan-400">"command"</span>: <span class="text-green-400">"bun --env-file=~/.claude/hooks/promptlens/.env run ~/.claude/hooks/promptlens/hook.ts"</span>,
-        <span class="text-cyan-400">"async"</span>: <span class="text-amber-400">true</span>
+        <span class="text-cyan-400">"hooks"</span>: [
+          {
+            <span class="text-cyan-400">"type"</span>: <span class="text-green-400">"command"</span>,
+            <span class="text-cyan-400">"command"</span>: <span class="text-green-400">"bun --env-file=~/.claude/hooks/promptlens/.env run ~/.claude/hooks/promptlens/hook.ts"</span>,
+            <span class="text-cyan-400">"async"</span>: <span class="text-amber-400">true</span>
+          }
+        ]
       }
     ]
   }
@@ -718,9 +723,10 @@
           editor (use `open` on macOS or `xdg-open` on Linux) so I can paste my
           OpenRouter API key securely. Wait for me to confirm I've saved the
           file before continuing. 4. Add this hook to my ~/.claude/settings.json
-          (merge with existing hooks if any): { "hooks": { "prompt_submit": [ {
-          "command": "bun --env-file=~/.claude/hooks/promptlens/.env run
-          ~/.claude/hooks/promptlens/hook.ts", "async": true } ] } }
+          (merge with existing hooks if any): { "hooks": { "UserPromptSubmit": [
+          { "hooks": [ { "type": "command", "command":
+          "bun --env-file=~/.claude/hooks/promptlens/.env run
+          ~/.claude/hooks/promptlens/hook.ts", "async": true } ] } ] } }
         </div>
       </div>
     </section>

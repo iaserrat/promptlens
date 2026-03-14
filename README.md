@@ -4,7 +4,7 @@ Your prompting habits, visualized. A Claude Code hook that scores, categorizes, 
 
 ## How it works
 
-1. **Hook** (`hook.ts`) — Runs as a Claude Code `prompt_submit` hook. For each prompt over a configurable minimum length, it sends the text to a fast/cheap LLM via OpenRouter, which returns a category, complexity rating, quality score (1-10), and a brief insight. Results are stored locally in `promptlens.db`. Duplicate prompts are automatically skipped via content hashing, and attached images (screenshots, diagrams) are detected and factored into the analysis.
+1. **Hook** (`hook.ts`) — Runs as a Claude Code `UserPromptSubmit` hook. For each prompt over a configurable minimum length, it sends the text to a fast/cheap LLM via OpenRouter, which returns a category, complexity rating, quality score (1-10), and a brief insight. Results are stored locally in `promptlens.db`. Duplicate prompts are automatically skipped via content hashing, and attached images (screenshots, diagrams) are detected and factored into the analysis.
 
 2. **Dashboard** (`tui.tsx`) — A full-screen terminal UI built with [Ink](https://github.com/vadimdemedes/ink) that live-polls the database every 1.5s. Shows a scrollable table of analyses, score distributions, per-project breakdowns, complexity charts, and session grouping.
 
@@ -45,10 +45,15 @@ Add this to your Claude Code hooks config (`~/.claude/settings.json` or project-
 ```json
 {
   "hooks": {
-    "prompt_submit": [
+    "UserPromptSubmit": [
       {
-        "command": "bun --env-file=~/.claude/hooks/promptlens/.env run ~/.claude/hooks/promptlens/hook.ts",
-        "async": true
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bun --env-file=~/.claude/hooks/promptlens/.env run ~/.claude/hooks/promptlens/hook.ts",
+            "async": true
+          }
+        ]
       }
     ]
   }
