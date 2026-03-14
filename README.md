@@ -80,6 +80,7 @@ promptlens
 | `c`         | Cycle category filter   |
 | `f`         | Cycle session filter    |
 | `g`         | Toggle session grouping |
+| `Tab`       | Switch tab              |
 | `Esc`       | Clear all filters       |
 | `d`         | Delete selected entry   |
 | `D`         | Delete all entries      |
