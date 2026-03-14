@@ -1,0 +1,20 @@
+{
+  "name": "promptlens",
+  "private": true,
+  "bin": {
+    "promptlens": "./promptlens.sh"
+  },
+  "type": "module",
+  "scripts": {
+    "tui": "bun run tui.tsx",
+    "hook": "bun --env-file=.env run hook.ts"
+  },
+  "dependencies": {
+    "ink": "^5.1.0",
+    "react": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/bun": "latest"
+  }
+}

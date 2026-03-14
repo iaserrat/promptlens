@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "jsxImportSource": "react",
+    "moduleResolution": "bundler",
+    "target": "esnext",
+    "module": "esnext",
+    "types": ["bun-types", "@types/react"],
+    "paths": {
+      "react": ["./node_modules/react"],
+      "react/*": ["./node_modules/react/*"],
+      "ink": ["./node_modules/ink"],
+      "ink/*": ["./node_modules/ink/*"]
+    },
+    "baseUrl": "."
+  },
+  "include": ["*.ts", "*.tsx"]
+}

@@ -1,0 +1,832 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>promptlens — see your prompts clearly</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              mono: ["JetBrains Mono", "monospace"],
+              sans: ["Inter", "sans-serif"],
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      ::-webkit-scrollbar {
+        width: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #111;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #333;
+        border-radius: 3px;
+      }
+      .tui-preview-wrapper {
+        position: relative;
+      }
+      @media (max-width: 767px) {
+        .tui-preview {
+          transform: scale(0.55);
+          transform-origin: top left;
+        }
+        .tui-preview-wrapper {
+          height: calc(var(--tui-h, 500px) * 0.55);
+          overflow: hidden;
+        }
+      }
+      @media (min-width: 768px) and (max-width: 1023px) {
+        .tui-preview {
+          transform: scale(0.75);
+          transform-origin: top left;
+        }
+        .tui-preview-wrapper {
+          height: calc(var(--tui-h, 500px) * 0.75);
+          overflow: hidden;
+        }
+      }
+    </style>
+  </head>
+  <body
+    class="bg-neutral-950 text-neutral-300 font-sans antialiased min-h-screen"
+  >
+    <!-- Hero -->
+    <header class="max-w-3xl mx-auto px-6 pt-20 pb-16">
+      <div class="flex items-center gap-3 mb-8">
+        <span
+          class="font-mono text-xs text-neutral-400 bg-neutral-800 px-3 py-1 rounded-full border border-neutral-700"
+          >v1.0</span
+        >
+        <span class="font-mono text-xs text-neutral-500">Claude Code Hook</span>
+      </div>
+
+      <h1 class="font-mono text-5xl md:text-6xl font-bold tracking-tight mb-6">
+        <span class="text-cyan-400">prompt</span
+        ><span class="text-neutral-100">lens</span>
+      </h1>
+
+      <p class="text-lg text-neutral-400 mt-4 max-w-2xl leading-relaxed">
+        Your prompting habits, visualized. A Claude Code hook that scores,
+        categorizes, and tracks every prompt you send — with a full-screen
+        terminal dashboard to spot patterns and level up.
+      </p>
+
+      <div class="flex flex-wrap gap-4 mt-10">
+        <a
+          href="#install"
+          class="font-mono text-sm px-5 py-2.5 bg-cyan-400 text-neutral-950 font-semibold rounded-md hover:bg-cyan-300 transition-colors"
+        >
+          Get started
+        </a>
+      </div>
+    </header>
+
+    <!-- TUI Preview -->
+    <section class="max-w-6xl mx-auto px-6 pb-20">
+      <div
+        class="bg-neutral-900 border border-neutral-800 rounded-lg overflow-hidden tui-preview-wrapper"
+      >
+        <!-- Window chrome -->
+        <div
+          class="flex items-center gap-2 px-4 py-2.5 border-b border-neutral-800"
+        >
+          <div class="w-3 h-3 rounded-full bg-neutral-700"></div>
+          <div class="w-3 h-3 rounded-full bg-neutral-700"></div>
+          <div class="w-3 h-3 rounded-full bg-neutral-700"></div>
+          <span class="font-mono text-xs text-neutral-500 ml-2"
+            >promptlens</span
+          >
+        </div>
+
+        <div class="p-5 font-mono text-xs tui-preview">
+          <!-- Stats bar -->
+          <div
+            class="border border-neutral-700 rounded px-3 py-2 mb-4 flex items-center gap-6 text-sm"
+          >
+            <span class="text-cyan-400 font-bold">◆ PROMPTLENS</span>
+            <span>Prompts <span class="text-white font-bold">47</span></span>
+            <span
+              >Sessions <span class="text-blue-400 font-bold">12</span></span
+            >
+            <span
+              >Avg quality <span class="text-green-400 font-bold">7.3</span
+              ><span class="text-neutral-500">/10</span></span
+            >
+            <span
+              >Top category
+              <span class="text-fuchsia-400 font-bold">feature</span></span
+            >
+            <span class="ml-auto text-neutral-500">? help</span>
+          </div>
+
+          <!-- Main content: table + sidebar -->
+          <div class="flex gap-4">
+            <!-- Left: table -->
+            <div class="flex-1 min-w-0">
+              <!-- Selected detail bar -->
+              <div
+                class="border border-neutral-700 rounded px-3 py-1.5 mb-3 flex gap-5 text-xs"
+              >
+                <span class="text-neutral-500">▸ Selected</span>
+                <span
+                  >Session
+                  <span class="text-blue-400 font-bold"
+                    >a3f8c21e9b04</span
+                  ></span
+                >
+                <span
+                  >Project
+                  <span class="text-green-400 font-bold">promptlens</span></span
+                >
+                <span class="text-neutral-500">~/.claude/hooks/promptlens</span>
+              </div>
+
+              <table class="w-full text-left text-xs">
+                <thead>
+                  <tr class="text-neutral-500">
+                    <th class="pb-1 pr-3 font-medium w-5"></th>
+                    <th class="pb-1 pr-3 font-medium">TIME</th>
+                    <th class="pb-1 pr-3 font-medium">CATEGORY</th>
+                    <th class="pb-1 pr-3 font-medium">COMPLEXITY</th>
+                    <th class="pb-1 pr-3 font-medium">SCORE</th>
+                    <th class="pb-1 pr-3 font-medium">QUALITY</th>
+                    <th class="pb-1 font-medium">INSIGHTS</th>
+                  </tr>
+                </thead>
+                <tbody class="border-t border-neutral-800">
+                  <tr class="bg-cyan-400/10">
+                    <td class="py-1 pr-3 text-cyan-400 font-bold">▸</td>
+                    <td class="py-1 pr-3 text-neutral-200 whitespace-nowrap">
+                      2m ago
+                    </td>
+                    <td class="py-1 pr-3 text-fuchsia-400">feature</td>
+                    <td class="py-1 pr-3 text-yellow-400">medium</td>
+                    <td class="py-1 pr-3 text-green-400 font-bold">8</td>
+                    <td class="py-1 pr-3 whitespace-nowrap">
+                      <span class="text-green-400">████████</span
+                      ><span class="text-neutral-700">░░</span>
+                    </td>
+                    <td class="py-1 text-neutral-200">
+                      Clear goal, good context
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="py-1 pr-3"></td>
+                    <td class="py-1 pr-3 text-neutral-400 whitespace-nowrap">
+                      15m ago
+                    </td>
+                    <td class="py-1 pr-3 text-fuchsia-400/70">debug</td>
+                    <td class="py-1 pr-3 text-red-400">high</td>
+                    <td class="py-1 pr-3 text-yellow-400 font-bold">6</td>
+                    <td class="py-1 pr-3 whitespace-nowrap">
+                      <span class="text-yellow-400">██████</span
+                      ><span class="text-neutral-700">░░░░</span>
+                    </td>
+                    <td class="py-1 text-neutral-400">Missing error details</td>
+                  </tr>
+                  <tr>
+                    <td class="py-1 pr-3"></td>
+                    <td class="py-1 pr-3 text-neutral-400 whitespace-nowrap">
+                      1h ago
+                    </td>
+                    <td class="py-1 pr-3 text-fuchsia-400/70">refactor</td>
+                    <td class="py-1 pr-3 text-green-400">low</td>
+                    <td class="py-1 pr-3 text-green-400 font-bold">9</td>
+                    <td class="py-1 pr-3 whitespace-nowrap">
+                      <span class="text-green-400">█████████</span
+                      ><span class="text-neutral-700">░</span>
+                    </td>
+                    <td class="py-1 text-neutral-400">
+                      Precise scope, clean ask
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="py-1 pr-3"></td>
+                    <td class="py-1 pr-3 text-neutral-400 whitespace-nowrap">
+                      2h ago
+                    </td>
+                    <td class="py-1 pr-3 text-fuchsia-400/70">explain</td>
+                    <td class="py-1 pr-3 text-yellow-400">medium</td>
+                    <td class="py-1 pr-3 text-red-400 font-bold">4</td>
+                    <td class="py-1 pr-3 whitespace-nowrap">
+                      <span class="text-red-400">████</span
+                      ><span class="text-neutral-700">░░░░░░</span>
+                    </td>
+                    <td class="py-1 text-neutral-400">
+                      Too vague, needs focus
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="py-1 pr-3"></td>
+                    <td class="py-1 pr-3 text-neutral-400 whitespace-nowrap">
+                      3h ago
+                    </td>
+                    <td class="py-1 pr-3 text-fuchsia-400/70">config</td>
+                    <td class="py-1 pr-3 text-green-400">low</td>
+                    <td class="py-1 pr-3 text-green-400 font-bold">7</td>
+                    <td class="py-1 pr-3 whitespace-nowrap">
+                      <span class="text-green-400">███████</span
+                      ><span class="text-neutral-700">░░░</span>
+                    </td>
+                    <td class="py-1 text-neutral-400">
+                      <span class="text-blue-400">[img]</span> Screenshot adds
+                      context
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="py-1 pr-3"></td>
+                    <td class="py-1 pr-3 text-neutral-400 whitespace-nowrap">
+                      4h ago
+                    </td>
+                    <td class="py-1 pr-3 text-fuchsia-400/70">test</td>
+                    <td class="py-1 pr-3 text-yellow-400">medium</td>
+                    <td class="py-1 pr-3 text-green-400 font-bold">7</td>
+                    <td class="py-1 pr-3 whitespace-nowrap">
+                      <span class="text-green-400">███████</span
+                      ><span class="text-neutral-700">░░░</span>
+                    </td>
+                    <td class="py-1 text-neutral-400">
+                      Good scope, add edge cases
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="py-1 pr-3"></td>
+                    <td class="py-1 pr-3 text-neutral-400 whitespace-nowrap">
+                      5h ago
+                    </td>
+                    <td class="py-1 pr-3 text-fuchsia-400/70">docs</td>
+                    <td class="py-1 pr-3 text-green-400">low</td>
+                    <td class="py-1 pr-3 text-green-400 font-bold">8</td>
+                    <td class="py-1 pr-3 whitespace-nowrap">
+                      <span class="text-green-400">████████</span
+                      ><span class="text-neutral-700">░░</span>
+                    </td>
+                    <td class="py-1 text-neutral-400">
+                      Specific, well-structured
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Right: sidebar -->
+            <div class="w-44 shrink-0 flex flex-col gap-3 hidden md:flex">
+              <!-- Projects -->
+              <div class="border border-neutral-700 rounded px-2.5 py-2">
+                <div class="text-neutral-500 text-xs mb-2">Projects</div>
+                <div class="space-y-1">
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-green-400 w-16 truncate">promptlens</span>
+                    <span class="text-green-400">████████</span>
+                    <span class="text-neutral-300 ml-auto">28</span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-green-400 w-16 truncate">api-server</span>
+                    <span class="text-green-400">████</span>
+                    <span class="text-neutral-300 ml-auto">12</span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-green-400 w-16 truncate">dotfiles</span>
+                    <span class="text-green-400">██</span>
+                    <span class="text-neutral-300 ml-auto">7</span>
+                  </div>
+                </div>
+              </div>
+              <!-- Categories -->
+              <div class="border border-neutral-700 rounded px-2.5 py-2">
+                <div class="text-neutral-500 text-xs mb-2">Categories</div>
+                <div class="space-y-1">
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-fuchsia-400 w-16">feature</span>
+                    <span class="text-fuchsia-400">██████</span>
+                    <span class="text-neutral-300 ml-auto">15</span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-fuchsia-400 w-16">debug</span>
+                    <span class="text-fuchsia-400">████</span>
+                    <span class="text-neutral-300 ml-auto">10</span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-fuchsia-400 w-16">refactor</span>
+                    <span class="text-fuchsia-400">███</span>
+                    <span class="text-neutral-300 ml-auto">7</span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-fuchsia-400 w-16">explain</span>
+                    <span class="text-fuchsia-400">██</span>
+                    <span class="text-neutral-300 ml-auto">5</span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-fuchsia-400 w-16">test</span>
+                    <span class="text-fuchsia-400">██</span>
+                    <span class="text-neutral-300 ml-auto">4</span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-fuchsia-400 w-16">docs</span>
+                    <span class="text-fuchsia-400">█</span>
+                    <span class="text-neutral-300 ml-auto">3</span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-fuchsia-400 w-16">config</span>
+                    <span class="text-fuchsia-400">█</span>
+                    <span class="text-neutral-300 ml-auto">3</span>
+                  </div>
+                </div>
+              </div>
+              <!-- Score Distribution -->
+              <div class="border border-neutral-700 rounded px-2.5 py-2">
+                <div class="text-neutral-500 text-xs mb-2">
+                  Score Distribution
+                </div>
+                <div class="space-y-0.5">
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-red-400 w-4 text-right">1</span
+                    ><span class="text-neutral-700">░░░░░░</span
+                    ><span class="text-neutral-500 ml-auto">0</span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-red-400 w-4 text-right">2</span
+                    ><span class="text-red-400">█</span
+                    ><span class="text-neutral-700">░░░░░</span
+                    ><span class="text-neutral-500 ml-auto">1</span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-red-400 w-4 text-right">3</span
+                    ><span class="text-red-400">█</span
+                    ><span class="text-neutral-700">░░░░░</span
+                    ><span class="text-neutral-500 ml-auto">1</span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-red-400 w-4 text-right">4</span
+                    ><span class="text-red-400">██</span
+                    ><span class="text-neutral-700">░░░░</span
+                    ><span class="text-neutral-500 ml-auto">3</span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-yellow-400 w-4 text-right">5</span
+                    ><span class="text-yellow-400">██</span
+                    ><span class="text-neutral-700">░░░░</span
+                    ><span class="text-neutral-500 ml-auto">4</span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-yellow-400 w-4 text-right">6</span
+                    ><span class="text-yellow-400">███</span
+                    ><span class="text-neutral-700">░░░</span
+                    ><span class="text-neutral-500 ml-auto">5</span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-yellow-400 w-4 text-right">7</span
+                    ><span class="text-yellow-400">████</span
+                    ><span class="text-neutral-700">░░</span
+                    ><span class="text-neutral-500 ml-auto">8</span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-green-400 w-4 text-right">8</span
+                    ><span class="text-green-400">██████</span
+                    ><span class="text-neutral-500 ml-auto">12</span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-green-400 w-4 text-right">9</span
+                    ><span class="text-green-400">████</span
+                    ><span class="text-neutral-700">░░</span
+                    ><span class="text-neutral-500 ml-auto">8</span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-green-400 w-4 text-right">10</span
+                    ><span class="text-green-400">██</span
+                    ><span class="text-neutral-700">░░░░</span
+                    ><span class="text-neutral-500 ml-auto">5</span>
+                  </div>
+                </div>
+              </div>
+              <!-- Complexity -->
+              <div class="border border-neutral-700 rounded px-2.5 py-2">
+                <div class="text-neutral-500 text-xs mb-2">Complexity</div>
+                <div class="space-y-1">
+                  <div class="flex items-center gap-2">
+                    <span class="text-green-400 w-12">low</span
+                    ><span class="text-neutral-300 font-bold">18</span
+                    ><span class="text-neutral-500">(38%)</span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-yellow-400 w-12">medium</span
+                    ><span class="text-neutral-300 font-bold">21</span
+                    ><span class="text-neutral-500">(45%)</span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-red-400 w-12">high</span
+                    ><span class="text-neutral-300 font-bold">8</span
+                    ><span class="text-neutral-500">(17%)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div
+            class="mt-4 pt-3 border-t border-neutral-800 text-neutral-500 text-xs flex justify-between"
+          >
+            <span
+              >↑↓ navigate &nbsp; p project &nbsp; c category &nbsp; f session
+              &nbsp; g group &nbsp; d del &nbsp; ? help &nbsp; q quit</span
+            >
+            <span>12:34:07 PM │ 1.5s poll</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- How it works -->
+    <section class="max-w-3xl mx-auto px-6 pb-20">
+      <h2 class="font-mono text-xl font-bold text-neutral-100 mb-10">
+        <span class="text-cyan-400">//</span> How it works
+      </h2>
+
+      <div class="grid md:grid-cols-3 gap-6">
+        <div class="border border-neutral-800 rounded-lg p-5">
+          <div class="font-mono text-cyan-400 text-2xl font-bold mb-3">01</div>
+          <h3 class="font-mono text-neutral-100 font-semibold mb-2 text-sm">
+            You prompt as usual
+          </h3>
+          <p class="text-neutral-400 text-sm leading-relaxed">
+            A
+            <code
+              class="text-amber-400 bg-neutral-800 px-1.5 py-0.5 rounded text-xs"
+              >prompt_submit</code
+            >
+            hook runs silently in the background every time you send a prompt.
+            Nothing changes about your workflow.
+          </p>
+        </div>
+
+        <div class="border border-neutral-800 rounded-lg p-5">
+          <div class="font-mono text-green-400 text-2xl font-bold mb-3">02</div>
+          <h3 class="font-mono text-neutral-100 font-semibold mb-2 text-sm">
+            Each prompt gets scored
+          </h3>
+          <p class="text-neutral-400 text-sm leading-relaxed">
+            A fast, cheap LLM call via OpenRouter classifies your prompt's
+            category, complexity, and quality (1-10) with a brief insight.
+            Results are stored locally in SQLite.
+          </p>
+        </div>
+
+        <div class="border border-neutral-800 rounded-lg p-5">
+          <div class="font-mono text-fuchsia-400 text-2xl font-bold mb-3">
+            03
+          </div>
+          <h3 class="font-mono text-neutral-100 font-semibold mb-2 text-sm">
+            Patterns emerge
+          </h3>
+          <p class="text-neutral-400 text-sm leading-relaxed">
+            Open the dashboard anytime to see your prompt history — quality
+            trends, what types of work you do most, which projects get the most
+            attention.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Why -->
+    <section class="max-w-3xl mx-auto px-6 pb-20">
+      <h2 class="font-mono text-xl font-bold text-neutral-100 mb-10">
+        <span class="text-green-400">//</span> Why promptlens
+      </h2>
+
+      <div class="grid md:grid-cols-2 gap-x-10 gap-y-6">
+        <div class="flex gap-3">
+          <span class="text-cyan-400 shrink-0">-</span>
+          <div>
+            <h3 class="text-neutral-100 font-medium text-sm mb-1">
+              See what you're actually asking
+            </h3>
+            <p class="text-neutral-400 text-sm">
+              Every prompt scored 1-10. Spot vague prompts, track improvement
+              over time.
+            </p>
+          </div>
+        </div>
+        <div class="flex gap-3">
+          <span class="text-fuchsia-400 shrink-0">-</span>
+          <div>
+            <h3 class="text-neutral-100 font-medium text-sm mb-1">
+              Understand your work patterns
+            </h3>
+            <p class="text-neutral-400 text-sm">
+              Are you mostly debugging? Building features? See the breakdown
+              across 8 categories.
+            </p>
+          </div>
+        </div>
+        <div class="flex gap-3">
+          <span class="text-green-400 shrink-0">-</span>
+          <div>
+            <h3 class="text-neutral-100 font-medium text-sm mb-1">
+              Compare across projects
+            </h3>
+            <p class="text-neutral-400 text-sm">
+              Per-project breakdowns show which codebases get the most attention
+              and prompt quality.
+            </p>
+          </div>
+        </div>
+        <div class="flex gap-3">
+          <span class="text-amber-400 shrink-0">-</span>
+          <div>
+            <h3 class="text-neutral-100 font-medium text-sm mb-1">
+              Zero friction
+            </h3>
+            <p class="text-neutral-400 text-sm">
+              Runs silently as a hook. No changes to how you use Claude Code.
+              Just open the dashboard when curious.
+            </p>
+          </div>
+        </div>
+        <div class="flex gap-3">
+          <span class="text-blue-400 shrink-0">-</span>
+          <div>
+            <h3 class="text-neutral-100 font-medium text-sm mb-1">
+              Local storage, your data
+            </h3>
+            <p class="text-neutral-400 text-sm">
+              All results stored in a local SQLite database. The only external
+              call is a cheap LLM inference via OpenRouter for analysis.
+            </p>
+          </div>
+        </div>
+        <div class="flex gap-3">
+          <span class="text-red-400 shrink-0">-</span>
+          <div>
+            <h3 class="text-neutral-100 font-medium text-sm mb-1">
+              Handles images too
+            </h3>
+            <p class="text-neutral-400 text-sm">
+              Detects when you attach screenshots or diagrams and factors them
+              into the analysis.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Install -->
+    <section id="install" class="max-w-3xl mx-auto px-6 pb-20">
+      <h2 class="font-mono text-xl font-bold text-neutral-100 mb-10">
+        <span class="text-fuchsia-400">//</span> Get started
+      </h2>
+
+      <p class="text-neutral-400 text-sm mb-8">
+        You'll need
+        <a
+          href="https://bun.sh"
+          class="text-cyan-400 underline underline-offset-2"
+          >Bun</a
+        >
+        and an
+        <a
+          href="https://openrouter.ai"
+          class="text-cyan-400 underline underline-offset-2"
+          >OpenRouter</a
+        >
+        API key (used for the cheap LLM call that scores each prompt).
+      </p>
+
+      <div class="space-y-8">
+        <!-- Step 1 -->
+        <div>
+          <div class="flex items-center gap-3 mb-3">
+            <span class="font-mono text-cyan-400 text-sm font-bold">1.</span>
+            <span class="text-neutral-100 font-medium text-sm"
+              >Clone & install</span
+            >
+          </div>
+          <div class="bg-neutral-900 border border-neutral-800 rounded-lg">
+            <pre
+              class="p-4 font-mono text-sm overflow-x-auto"
+            ><code><span class="text-green-400">$</span> <span class="text-neutral-200">git clone https://github.com/iaserrat/promptlens ~/.claude/hooks/promptlens</span>
+<span class="text-green-400">$</span> <span class="text-neutral-200">cd ~/.claude/hooks/promptlens</span>
+<span class="text-green-400">$</span> <span class="text-neutral-200">bun install</span>
+<span class="text-green-400">$</span> <span class="text-neutral-200">bun link</span>    <span class="text-neutral-500"># makes `promptlens` available globally</span></code></pre>
+          </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div>
+          <div class="flex items-center gap-3 mb-3">
+            <span class="font-mono text-cyan-400 text-sm font-bold">2.</span>
+            <span class="text-neutral-100 font-medium text-sm"
+              >Add your OpenRouter key</span
+            >
+          </div>
+          <div class="bg-neutral-900 border border-neutral-800 rounded-lg">
+            <pre
+              class="p-4 font-mono text-sm overflow-x-auto"
+            ><code><span class="text-neutral-500"># Create ~/.claude/hooks/promptlens/.env</span>
+<span class="text-amber-400">OPENROUTER_API_KEY</span><span class="text-neutral-200">=sk-or-...</span>
+<span class="text-amber-400">OPENROUTER_MODEL</span><span class="text-neutral-200">=anthropic/claude-haiku-4.5</span>    <span class="text-neutral-500"># optional, this is the default</span>
+<span class="text-amber-400">PROMPTLENS_MIN_LENGTH</span><span class="text-neutral-200">=50</span><span class="text-neutral-500"># optional, min chars to analyze</span></code></pre>
+          </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div>
+          <div class="flex items-center gap-3 mb-3">
+            <span class="font-mono text-cyan-400 text-sm font-bold">3.</span>
+            <span class="text-neutral-100 font-medium text-sm"
+              >Register the hook in Claude Code</span
+            >
+          </div>
+          <p class="text-neutral-500 text-xs mb-3">
+            Add this to
+            <code
+              class="text-amber-400 bg-neutral-800 px-1.5 py-0.5 rounded text-xs"
+              >~/.claude/settings.json</code
+            >
+            (or your project-level settings):
+          </p>
+          <div class="bg-neutral-900 border border-neutral-800 rounded-lg">
+            <pre class="p-4 font-mono text-sm overflow-x-auto"><code>{
+  <span class="text-cyan-400">"hooks"</span>: {
+    <span class="text-cyan-400">"prompt_submit"</span>: [
+      {
+        <span class="text-cyan-400">"command"</span>: <span class="text-green-400">"bun --env-file=~/.claude/hooks/promptlens/.env run ~/.claude/hooks/promptlens/hook.ts"</span>,
+        <span class="text-cyan-400">"async"</span>: <span class="text-amber-400">true</span>
+      }
+    ]
+  }
+}</code></pre>
+          </div>
+        </div>
+
+        <!-- Step 4 -->
+        <div>
+          <div class="flex items-center gap-3 mb-3">
+            <span class="font-mono text-cyan-400 text-sm font-bold">4.</span>
+            <span class="text-neutral-100 font-medium text-sm"
+              >Open the dashboard</span
+            >
+          </div>
+          <div class="bg-neutral-900 border border-neutral-800 rounded-lg">
+            <pre
+              class="p-4 font-mono text-sm overflow-x-auto"
+            ><code><span class="text-green-400">$</span> <span class="text-neutral-200">promptlens</span></code></pre>
+          </div>
+          <p class="text-neutral-500 text-xs mt-2">
+            Start using Claude Code as normal. Analyses appear in the dashboard
+            automatically.
+          </p>
+        </div>
+      </div>
+
+      <!-- Copy prompt shortcut -->
+      <div class="mt-12 border border-neutral-800 rounded-lg p-5">
+        <div class="flex items-start justify-between gap-4 mb-3">
+          <div>
+            <h3 class="text-neutral-100 font-medium text-sm">
+              Or just paste this into Claude Code
+            </h3>
+            <p class="text-neutral-500 text-xs mt-1">
+              Copy the prompt below, paste it into a Claude Code session, and it
+              will set everything up for you. You'll just need to provide your
+              OpenRouter API key when asked.
+            </p>
+          </div>
+          <button
+            id="copy-prompt-btn"
+            onclick="copyInstallPrompt()"
+            class="font-mono text-xs px-3 py-1.5 bg-cyan-400 text-neutral-950 font-semibold rounded hover:bg-cyan-300 transition-colors shrink-0"
+          >
+            Copy prompt
+          </button>
+        </div>
+        <div
+          class="bg-neutral-950 border border-neutral-800 rounded p-4 font-mono text-xs text-neutral-400 leading-relaxed max-h-40 overflow-y-auto"
+          id="install-prompt"
+        >
+          Install promptlens for me. Here's what to do: 1. Clone the repo into
+          ~/.claude/hooks/promptlens: git clone
+          https://github.com/iaserrat/promptlens ~/.claude/hooks/promptlens 2.
+          Run `bun install` in that directory, then `bun link` to make the
+          `promptlens` command available globally. 3. Create the file
+          ~/.claude/hooks/promptlens/.env with a placeholder:
+          OPENROUTER_API_KEY=paste-your-key-here Then open it in my default text
+          editor (use `open` on macOS or `xdg-open` on Linux) so I can paste my
+          OpenRouter API key securely. Wait for me to confirm I've saved the
+          file before continuing. 4. Add this hook to my ~/.claude/settings.json
+          (merge with existing hooks if any): { "hooks": { "prompt_submit": [ {
+          "command": "bun --env-file=~/.claude/hooks/promptlens/.env run
+          ~/.claude/hooks/promptlens/hook.ts", "async": true } ] } }
+        </div>
+      </div>
+    </section>
+
+    <script>
+      // Set TUI preview height for scaled containers
+      const tuiPreview = document.querySelector(".tui-preview");
+      if (tuiPreview) {
+        const wrapper = document.querySelector(".tui-preview-wrapper");
+        const h = tuiPreview.scrollHeight;
+        wrapper.style.setProperty("--tui-h", h + "px");
+      }
+
+      function copyInstallPrompt() {
+        const el = document.getElementById("install-prompt");
+        const text = el.textContent;
+        navigator.clipboard.writeText(text).then(() => {
+          const btn = document.getElementById("copy-prompt-btn");
+          btn.textContent = "Copied!";
+          setTimeout(() => {
+            btn.textContent = "Copy prompt";
+          }, 2000);
+        });
+      }
+    </script>
+
+    <!-- Keyboard shortcuts -->
+    <section class="max-w-3xl mx-auto px-6 pb-20">
+      <h2 class="font-mono text-xl font-bold text-neutral-100 mb-10">
+        <span class="text-amber-400">//</span> Keyboard shortcuts
+      </h2>
+
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div
+          class="bg-neutral-900 border border-neutral-800 rounded-lg p-3 text-center"
+        >
+          <kbd class="font-mono text-amber-400 text-base font-bold">↑ ↓</kbd>
+          <p class="text-neutral-400 text-xs mt-1.5">Navigate</p>
+        </div>
+        <div
+          class="bg-neutral-900 border border-neutral-800 rounded-lg p-3 text-center"
+        >
+          <kbd class="font-mono text-amber-400 text-base font-bold">p</kbd>
+          <p class="text-neutral-400 text-xs mt-1.5">Filter project</p>
+        </div>
+        <div
+          class="bg-neutral-900 border border-neutral-800 rounded-lg p-3 text-center"
+        >
+          <kbd class="font-mono text-amber-400 text-base font-bold">c</kbd>
+          <p class="text-neutral-400 text-xs mt-1.5">Filter category</p>
+        </div>
+        <div
+          class="bg-neutral-900 border border-neutral-800 rounded-lg p-3 text-center"
+        >
+          <kbd class="font-mono text-amber-400 text-base font-bold">g</kbd>
+          <p class="text-neutral-400 text-xs mt-1.5">Group sessions</p>
+        </div>
+        <div
+          class="bg-neutral-900 border border-neutral-800 rounded-lg p-3 text-center"
+        >
+          <kbd class="font-mono text-amber-400 text-base font-bold">f</kbd>
+          <p class="text-neutral-400 text-xs mt-1.5">Filter session</p>
+        </div>
+        <div
+          class="bg-neutral-900 border border-neutral-800 rounded-lg p-3 text-center"
+        >
+          <kbd class="font-mono text-amber-400 text-base font-bold">d</kbd>
+          <p class="text-neutral-400 text-xs mt-1.5">Delete entry</p>
+        </div>
+        <div
+          class="bg-neutral-900 border border-neutral-800 rounded-lg p-3 text-center"
+        >
+          <kbd class="font-mono text-amber-400 text-base font-bold">?</kbd>
+          <p class="text-neutral-400 text-xs mt-1.5">Help</p>
+        </div>
+        <div
+          class="bg-neutral-900 border border-neutral-800 rounded-lg p-3 text-center"
+        >
+          <kbd class="font-mono text-amber-400 text-base font-bold">q</kbd>
+          <p class="text-neutral-400 text-xs mt-1.5">Quit</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="border-t border-neutral-800">
+      <div
+        class="max-w-3xl mx-auto px-6 py-8 flex flex-col md:flex-row items-center justify-between gap-4"
+      >
+        <div class="font-mono text-sm">
+          <span class="text-cyan-400 font-bold">prompt</span
+          ><span class="text-neutral-100 font-bold">lens</span>
+          <span class="text-neutral-500 ml-3">See your prompts clearly.</span>
+        </div>
+        <div class="font-mono text-xs text-neutral-500">
+          Built for Claude Code
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>
