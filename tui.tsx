@@ -8,13 +8,26 @@ import {
   getProjectStats,
   getSessionCount,
   getDailyTrends,
+  getRecommendations,
+  getCategoryScores,
+  getWeeklyComparison,
+  getLengthDistribution,
+  getDataHash,
+  getCachedLLMRecs,
+  saveLLMRecs,
+  gatherLLMContext,
   deleteAnalysis,
   deleteAllAnalyses,
   type Analysis,
   type Stats,
   type ProjectStat,
   type DailyTrend,
+  type Recommendation,
+  type CategoryScore,
+  type WeeklyComparison,
+  type LengthBucket,
 } from "./db";
+import { generateLLMRecommendations } from "./analyze";
 import type { Database } from "bun:sqlite";
 import { LineGraph, Sparkline, BarChart } from "@pppp606/ink-chart";
 
@@ -27,6 +40,10 @@ const initStats = getStats(initDb);
 const initProjectStats = getProjectStats(initDb);
 const initSessionCount = getSessionCount(initDb);
 const initTrends = getDailyTrends(initDb);
+const initRecs = getRecommendations(initDb);
+const initCatScores = getCategoryScores(initDb);
+const initWeekly = getWeeklyComparison(initDb);
+const initLengthBuckets = getLengthDistribution(initDb);
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -226,6 +243,7 @@ function StatsBar({
   const tabs: { key: Tab; label: string }[] = [
     { key: "dashboard", label: "Dashboard" },
     { key: "trends", label: "Trends" },
+    { key: "recommendations", label: "Tips" },
   ];
 
   return (
@@ -962,7 +980,7 @@ function Footer({ width, lastRefresh }: { width: number; lastRefresh: Date }) {
 
 // ── Tab Bar ─────────────────────────────────────────────────────────
 
-type Tab = "dashboard" | "trends";
+type Tab = "dashboard" | "trends" | "recommendations";
 
 // ── Trends View ─────────────────────────────────────────────────────
 
@@ -1046,6 +1064,213 @@ function TrendsView({
   );
 }
 
+// ── Recommendations View ─────────────────────────────────────────────
+
+function RecCard({ r }: { r: Recommendation }) {
+  const color = r.severity === "good" ? "green" : r.severity === "warn" ? "yellow" : "cyan";
+  const icon = r.severity === "good" ? "+" : r.severity === "warn" ? "!" : "i";
+  return (
+    <Box flexDirection="column">
+      <Box gap={1}>
+        <Text bold color={color}>[{icon}]</Text>
+        <Text bold color={color}>{r.title}</Text>
+      </Box>
+      <Box marginLeft={4}>
+        <Text wrap="wrap">{r.body}</Text>
+      </Box>
+    </Box>
+  );
+}
+
+function CategoryScoreChart({
+  catScores,
+  width,
+}: {
+  catScores: CategoryScore[];
+  width: number;
+}) {
+  if (catScores.length === 0) return null;
+  const innerW = width - 4;
+  const labelW = 10;
+  const scoreW = 5;
+  const barW = Math.max(3, innerW - labelW - scoreW - 3);
+
+  return (
+    <Panel title="Score by Category" width={width}>
+      <Box flexDirection="column" gap={1}>
+        {catScores.map((c) => {
+          const filled = Math.round((c.avg_score / 10) * barW);
+          const empty = barW - filled;
+          return (
+            <Box key={c.category} gap={1}>
+              <Text color="magenta">{pad(c.category, labelW)}</Text>
+              <Text>
+                <Text color={scoreColor(c.avg_score)}>{"█".repeat(filled)}</Text>
+                <Text dimColor>{"░".repeat(empty)}</Text>
+              </Text>
+              <Text bold color={scoreColor(c.avg_score)}>
+                {String(c.avg_score).padStart(scoreW)}
+              </Text>
+            </Box>
+          );
+        })}
+      </Box>
+    </Panel>
+  );
+}
+
+function WeeklyScorecard({
+  weekly,
+  width,
+}: {
+  weekly: WeeklyComparison;
+  width: number;
+}) {
+  const delta = (curr: number, prev: number) => {
+    if (prev === 0) return { text: "", color: "gray" };
+    const d = curr - prev;
+    if (d > 0) return { text: ` +${d.toFixed(1)}`, color: "green" };
+    if (d < 0) return { text: ` ${d.toFixed(1)}`, color: "red" };
+    return { text: " =", color: "gray" };
+  };
+
+  const scoreDelta = delta(weekly.thisWeek.avgScore, weekly.lastWeek.avgScore);
+  const countDelta = delta(weekly.thisWeek.count, weekly.lastWeek.count);
+  const lenDelta = delta(weekly.thisWeek.avgLength, weekly.lastWeek.avgLength);
+
+  return (
+    <Panel title="This Week vs Last Week" width={width}>
+      <Box flexDirection="column" gap={1}>
+        <Box gap={1}>
+          <Text dimColor>{pad("", 12)}</Text>
+          <Text bold dimColor>{pad("This wk", 10)}</Text>
+          <Text bold dimColor>{pad("Last wk", 10)}</Text>
+          <Text bold dimColor>Change</Text>
+        </Box>
+        <Box gap={1}>
+          <Text dimColor>{pad("Prompts", 12)}</Text>
+          <Text bold>{pad(String(weekly.thisWeek.count), 10)}</Text>
+          <Text dimColor>{pad(String(weekly.lastWeek.count), 10)}</Text>
+          <Text color={countDelta.color}>{countDelta.text}</Text>
+        </Box>
+        <Box gap={1}>
+          <Text dimColor>{pad("Avg score", 12)}</Text>
+          <Text bold color={scoreColor(weekly.thisWeek.avgScore)}>
+            {pad(weekly.thisWeek.avgScore ? String(weekly.thisWeek.avgScore) : "—", 10)}
+          </Text>
+          <Text dimColor>{pad(weekly.lastWeek.avgScore ? String(weekly.lastWeek.avgScore) : "—", 10)}</Text>
+          <Text color={scoreDelta.color}>{scoreDelta.text}</Text>
+        </Box>
+        <Box gap={1}>
+          <Text dimColor>{pad("Avg length", 12)}</Text>
+          <Text bold>{pad(String(weekly.thisWeek.avgLength), 10)}</Text>
+          <Text dimColor>{pad(String(weekly.lastWeek.avgLength), 10)}</Text>
+          <Text color={lenDelta.color}>{lenDelta.text}</Text>
+        </Box>
+      </Box>
+    </Panel>
+  );
+}
+
+function LengthScoreChart({
+  buckets,
+  width,
+}: {
+  buckets: LengthBucket[];
+  width: number;
+}) {
+  if (buckets.length === 0) return null;
+  const innerW = width - 4;
+  const labelW = 9;
+  const scoreW = 5;
+  const countW = 5;
+  const barW = Math.max(3, innerW - labelW - scoreW - countW - 4);
+  const maxCount = Math.max(1, ...buckets.map((b) => b.count));
+
+  return (
+    <Panel title="Length vs Quality" width={width}>
+      <Box flexDirection="column" gap={1}>
+        {buckets.map((b) => {
+          const filled = Math.round((b.count / maxCount) * barW);
+          const empty = barW - filled;
+          return (
+            <Box key={b.label} gap={1}>
+              <Text dimColor>{pad(b.label, labelW)}</Text>
+              <Text>
+                <Text color={scoreColor(b.avg_score)}>{"█".repeat(filled)}</Text>
+                <Text dimColor>{"░".repeat(empty)}</Text>
+              </Text>
+              <Text dimColor>{String(b.count).padStart(countW)}</Text>
+              <Text bold color={scoreColor(b.avg_score)}>
+                {String(b.avg_score).padStart(scoreW)}
+              </Text>
+            </Box>
+          );
+        })}
+        <Box gap={1}>
+          <Text dimColor>{pad("chars", labelW)}</Text>
+          <Text dimColor>{pad("volume", barW)}</Text>
+          <Text dimColor>{" ".repeat(countW - 3)}cnt</Text>
+          <Text dimColor>{" ".repeat(scoreW - 3)}avg</Text>
+        </Box>
+      </Box>
+    </Panel>
+  );
+}
+
+function RecommendationsView({
+  recs,
+  llmRecs,
+  llmLoading,
+  catScores,
+  weekly,
+  lengthBuckets,
+  width,
+  height,
+}: {
+  recs: Recommendation[];
+  llmRecs: Recommendation[];
+  llmLoading: boolean;
+  catScores: CategoryScore[];
+  weekly: WeeklyComparison;
+  lengthBuckets: LengthBucket[];
+  width: number;
+  height: number;
+}) {
+  const leftW = Math.floor(width * 0.45);
+  const rightW = width - leftW;
+
+  return (
+    <Box width={width}>
+      {/* Left column: charts */}
+      <Box flexDirection="column" width={leftW} gap={1}>
+        <CategoryScoreChart catScores={catScores} width={leftW} />
+        <WeeklyScorecard weekly={weekly} width={leftW} />
+        <LengthScoreChart buckets={lengthBuckets} width={leftW} />
+      </Box>
+      {/* Right column: recommendations */}
+      <Box flexDirection="column" width={rightW} gap={1}>
+        <Panel title="Recommendations" width={rightW}>
+          <Box flexDirection="column" gap={1}>
+            {recs.map((r, i) => <RecCard key={`sql-${i}`} r={r} />)}
+          </Box>
+        </Panel>
+        <Panel title="AI Insights" titleColor={llmLoading ? "yellow" : "cyan"} width={rightW}>
+          {llmLoading ? (
+            <Text color="yellow">Analyzing your prompting patterns...</Text>
+          ) : llmRecs.length === 0 ? (
+            <Text dimColor>No AI insights available. Ensure OPENROUTER_API_KEY is set.</Text>
+          ) : (
+            <Box flexDirection="column" gap={1}>
+              {llmRecs.map((r, i) => <RecCard key={`llm-${i}`} r={r} />)}
+            </Box>
+          )}
+        </Panel>
+      </Box>
+    </Box>
+  );
+}
+
 // ── Main App ────────────────────────────────────────────────────────
 
 type Modal = "none" | "help" | "confirmDelete" | "confirmDeleteAll";
@@ -1062,6 +1287,13 @@ function App() {
     useState<ProjectStat[]>(initProjectStats);
   const [sessionCount, setSessionCount] = useState(initSessionCount);
   const [trends, setTrends] = useState<DailyTrend[]>(initTrends);
+  const [recs, setRecs] = useState<Recommendation[]>(initRecs);
+  const [catScores, setCatScores] = useState<CategoryScore[]>(initCatScores);
+  const [weekly, setWeekly] = useState<WeeklyComparison>(initWeekly);
+  const [lengthBuckets, setLengthBuckets] = useState<LengthBucket[]>(initLengthBuckets);
+  const [llmRecs, setLlmRecs] = useState<Recommendation[]>([]);
+  const [llmLoading, setLlmLoading] = useState(false);
+  const llmFetchedHash = useRef<string | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>("dashboard");
   const [lastRefresh, setLastRefresh] = useState(new Date());
   const [selectedIdx, setSelectedIdx] = useState(0);
@@ -1090,6 +1322,10 @@ function App() {
     setProjectStats(getProjectStats(db));
     setSessionCount(getSessionCount(db));
     setTrends(getDailyTrends(db));
+    setRecs(getRecommendations(db));
+    setCatScores(getCategoryScores(db));
+    setWeekly(getWeeklyComparison(db));
+    setLengthBuckets(getLengthDistribution(db));
     setLastRefresh(new Date());
   };
 
@@ -1191,9 +1427,11 @@ function App() {
         setSelectedIdx(0);
         showFlash(grouped ? "Grouping off" : "Grouped by session");
         break;
-      case "switchTab":
-        setActiveTab((t) => (t === "dashboard" ? "trends" : "dashboard"));
+      case "switchTab": {
+        const tabOrder: Tab[] = ["dashboard", "trends", "recommendations"];
+        setActiveTab((t) => tabOrder[(tabOrder.indexOf(t) + 1) % tabOrder.length]);
         break;
+      }
       case "sidebarScrollUp":
         setSidebarScroll((s) => Math.max(0, s - 1));
         break;
@@ -1218,6 +1456,37 @@ function App() {
       dbRef.current.close();
     };
   }, []);
+
+  // Fetch LLM recommendations when Tips tab is active and data has changed
+  useEffect(() => {
+    if (activeTab !== "recommendations") return;
+    const db = dbRef.current;
+    const currentHash = getDataHash(db);
+    // Already fetched for this data
+    if (llmFetchedHash.current === currentHash) return;
+    // Check cache first
+    const cached = getCachedLLMRecs(db);
+    if (cached && cached.dataHash === currentHash) {
+      setLlmRecs(cached.recs);
+      llmFetchedHash.current = currentHash;
+      return;
+    }
+    // Fetch from LLM
+    setLlmLoading(true);
+    const context = gatherLLMContext(db);
+    generateLLMRecommendations(context as unknown as Record<string, unknown>).then((results) => {
+      const mapped: Recommendation[] = results.map((r) => ({
+        icon: r.severity === "good" ? "+" : r.severity === "warn" ? "!" : "i",
+        ...r,
+      }));
+      setLlmRecs(mapped);
+      setLlmLoading(false);
+      llmFetchedHash.current = currentHash;
+      saveLLMRecs(db, currentHash, mapped);
+    }).catch(() => {
+      setLlmLoading(false);
+    });
+  }, [activeTab, allAnalyses.length]);
 
   // Clamp selected index when data changes
   useEffect(() => {
@@ -1317,11 +1586,24 @@ function App() {
             </Box>
           </Box>
         </>
-      ) : (
+      ) : activeTab === "trends" ? (
         <Box flexGrow={1}>
           <TrendsView
             trends={trends}
             analyses={analyses}
+            width={columns}
+            height={tableH}
+          />
+        </Box>
+      ) : (
+        <Box flexGrow={1}>
+          <RecommendationsView
+            recs={recs}
+            llmRecs={llmRecs}
+            llmLoading={llmLoading}
+            catScores={catScores}
+            weekly={weekly}
+            lengthBuckets={lengthBuckets}
             width={columns}
             height={tableH}
           />

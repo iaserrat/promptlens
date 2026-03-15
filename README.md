@@ -8,7 +8,12 @@ promptlens has two parts that work together:
 
 1. **Hook** (`hook.ts`) — A Claude Code `UserPromptSubmit` hook that runs silently in the background. For each prompt over a configurable minimum length, it sends the text to a fast/cheap LLM via OpenRouter, which returns a category, complexity rating, quality score (1-10), and a brief insight. Results are stored locally in `promptlens.db`. Duplicate prompts are automatically skipped via content hashing, and attached images (screenshots, diagrams) are detected and factored into the analysis.
 
-2. **TUI** (`tui.tsx`) — A full-screen terminal dashboard built with [Ink](https://github.com/vadimdemedes/ink) that live-polls the database every 1.5s. Shows a scrollable table of analyses, score distributions, per-project breakdowns, complexity charts, and session grouping. Run it anytime with `promptlens`.
+2. **TUI** (`tui.tsx`) — A full-screen terminal dashboard built with [Ink](https://github.com/vadimdemedes/ink) that live-polls the database every 1.5s. Three tabs:
+   - **Dashboard** — Scrollable table of analyses, score distributions, per-project breakdowns, complexity charts, and session grouping.
+   - **Trends** — Quality score and prompt volume over time, category breakdown charts.
+   - **Tips** — Actionable recommendations to improve your prompting. Shows score-by-category charts, week-over-week scorecard, prompt length vs quality correlation, SQL-derived pattern detection, and AI-powered insights (on-demand LLM analysis of your aggregate patterns, cached until new data arrives).
+
+3. **Import** (`import.ts`) — Bulk-import and analyze your existing Claude Code history (`~/.claude/history.jsonl`). Deduplicates against already-analyzed prompts, supports concurrency control, and shows real-time cost tracking.
 
 ## Setup
 
@@ -71,6 +76,15 @@ promptlens
 # or: bun run tui
 ```
 
+### Import history
+
+```bash
+promptlens import              # import and analyze all history
+promptlens import --dry-run    # preview counts and estimated cost
+promptlens import --project=/path/to/repo  # filter by project
+promptlens import --concurrency=10         # parallel requests (default: 5)
+```
+
 ### Keyboard shortcuts
 
 | Key         | Action                  |
@@ -80,7 +94,8 @@ promptlens
 | `c`         | Cycle category filter   |
 | `f`         | Cycle session filter    |
 | `g`         | Toggle session grouping |
-| `Tab`       | Switch tab              |
+| `Tab`       | Switch tab (Dashboard/Trends/Tips) |
+| `[`/`]`     | Scroll sidebar panels   |
 | `Esc`       | Clear all filters       |
 | `d`         | Delete selected entry   |
 | `D`         | Delete all entries      |
