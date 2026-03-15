@@ -7,7 +7,8 @@
   "type": "module",
   "scripts": {
     "tui": "bun run tui.tsx",
-    "hook": "bun --env-file=.env run hook.ts"
+    "hook": "bun --env-file=.env run hook.ts",
+    "import": "bun --env-file=.env run import.ts"
   },
   "dependencies": {
     "@pppp606/ink-chart": "^0.2.4",

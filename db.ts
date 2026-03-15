@@ -63,27 +63,50 @@ export interface Analysis {
 
 export function insertAnalysis(
   db: Database,
-  data: Omit<Analysis, "id" | "created_at">,
+  data: Omit<Analysis, "id" | "created_at"> & { created_at?: string },
 ) {
-  const stmt = db.prepare(`
-    INSERT INTO analyses (session_id, prompt_hash, prompt_length, category, complexity, quality_score, insights, model_used, latency_ms, token_count, cwd, has_images, image_count)
-    VALUES ($session_id, $prompt_hash, $prompt_length, $category, $complexity, $quality_score, $insights, $model_used, $latency_ms, $token_count, $cwd, $has_images, $image_count)
-  `);
-  stmt.run({
-    $session_id: data.session_id,
-    $prompt_hash: data.prompt_hash,
-    $prompt_length: data.prompt_length,
-    $category: data.category,
-    $complexity: data.complexity,
-    $quality_score: data.quality_score,
-    $insights: data.insights,
-    $model_used: data.model_used,
-    $latency_ms: data.latency_ms,
-    $token_count: data.token_count,
-    $cwd: data.cwd,
-    $has_images: data.has_images,
-    $image_count: data.image_count,
-  });
+  if (data.created_at) {
+    const stmt = db.prepare(`
+      INSERT INTO analyses (session_id, prompt_hash, prompt_length, category, complexity, quality_score, insights, model_used, latency_ms, token_count, cwd, has_images, image_count, created_at)
+      VALUES ($session_id, $prompt_hash, $prompt_length, $category, $complexity, $quality_score, $insights, $model_used, $latency_ms, $token_count, $cwd, $has_images, $image_count, $created_at)
+    `);
+    stmt.run({
+      $session_id: data.session_id,
+      $prompt_hash: data.prompt_hash,
+      $prompt_length: data.prompt_length,
+      $category: data.category,
+      $complexity: data.complexity,
+      $quality_score: data.quality_score,
+      $insights: data.insights,
+      $model_used: data.model_used,
+      $latency_ms: data.latency_ms,
+      $token_count: data.token_count,
+      $cwd: data.cwd,
+      $has_images: data.has_images,
+      $image_count: data.image_count,
+      $created_at: data.created_at,
+    });
+  } else {
+    const stmt = db.prepare(`
+      INSERT INTO analyses (session_id, prompt_hash, prompt_length, category, complexity, quality_score, insights, model_used, latency_ms, token_count, cwd, has_images, image_count)
+      VALUES ($session_id, $prompt_hash, $prompt_length, $category, $complexity, $quality_score, $insights, $model_used, $latency_ms, $token_count, $cwd, $has_images, $image_count)
+    `);
+    stmt.run({
+      $session_id: data.session_id,
+      $prompt_hash: data.prompt_hash,
+      $prompt_length: data.prompt_length,
+      $category: data.category,
+      $complexity: data.complexity,
+      $quality_score: data.quality_score,
+      $insights: data.insights,
+      $model_used: data.model_used,
+      $latency_ms: data.latency_ms,
+      $token_count: data.token_count,
+      $cwd: data.cwd,
+      $has_images: data.has_images,
+      $image_count: data.image_count,
+    });
+  }
 }
 
 export function hashExists(db: Database, hash: string): boolean {
@@ -151,7 +174,7 @@ export interface DailyTrend {
   count: number;
 }
 
-export function getDailyTrends(db: Database, days = 30): DailyTrend[] {
+export function getDailyTrends(db: Database): DailyTrend[] {
   return db
     .query(
       `
@@ -160,12 +183,11 @@ export function getDailyTrends(db: Database, days = 30): DailyTrend[] {
         ROUND(COALESCE(AVG(quality_score), 0), 1) as avg_score,
         COUNT(*) as count
       FROM analyses
-      WHERE created_at >= datetime('now', '-' || $days || ' days')
       GROUP BY date(created_at)
       ORDER BY day ASC
     `,
     )
-    .all({ $days: days }) as DailyTrend[];
+    .all() as DailyTrend[];
 }
 
 export function getStats(db: Database): Stats {

@@ -102,7 +102,9 @@ type KeyAction =
   | { type: "filterCategory" }
   | { type: "filterSession" }
   | { type: "toggleGrouping" }
-  | { type: "switchTab" };
+  | { type: "switchTab" }
+  | { type: "sidebarScrollUp" }
+  | { type: "sidebarScrollDown" };
 
 interface Filters {
   project: string | null;
@@ -152,6 +154,8 @@ function KeyboardHandler({ onAction }: { onAction: (a: KeyAction) => void }) {
     else if (input === "f") onAction({ type: "filterSession" });
     else if (input === "g") onAction({ type: "toggleGrouping" });
     else if (key.tab) onAction({ type: "switchTab" });
+    else if (input === "[") onAction({ type: "sidebarScrollUp" });
+    else if (input === "]") onAction({ type: "sidebarScrollDown" });
     else if (input === "?") onAction({ type: "help" });
     else if (key.return || input === "y") onAction({ type: "confirm" });
     else if (key.escape || input === "n") onAction({ type: "cancel" });
@@ -212,45 +216,53 @@ function StatsBar({
   stats,
   sessionCount,
   width,
+  activeTab,
 }: {
   stats: Stats;
   sessionCount: number;
   width: number;
+  activeTab: Tab;
 }) {
+  const tabs: { key: Tab; label: string }[] = [
+    { key: "dashboard", label: "Dashboard" },
+    { key: "trends", label: "Trends" },
+  ];
+
   return (
-    <Box width={width} gap={1}>
-      <Panel title="◆ PROMPTLENS" titleColor="cyan" width="100%">
-        <Box justifyContent="space-between">
-          <Box gap={2}>
-            <Text>
-              Prompts{" "}
-              <Text bold color="white">
-                {stats.total}
-              </Text>
+    <Box width={width} paddingX={1} justifyContent="space-between">
+      <Box gap={1}>
+        <Text bold color="cyan">◆ PROMPTLENS</Text>
+        <Text dimColor>│</Text>
+        {tabs.map((t, i) => (
+          <React.Fragment key={t.key}>
+            {i > 0 && <Text dimColor>│</Text>}
+            <Text
+              bold={activeTab === t.key}
+              color={activeTab === t.key ? "cyan" : "gray"}
+              underline={activeTab === t.key}
+            >
+              {t.label}
             </Text>
-            <Text>
-              Sessions{" "}
-              <Text bold color="blue">
-                {sessionCount}
-              </Text>
-            </Text>
-            <Text>
-              Avg quality{" "}
-              <Text bold color={scoreColor(stats.avg_score)}>
-                {stats.avg_score || "—"}
-              </Text>
-              <Text dimColor>/10</Text>
-            </Text>
-            <Text>
-              Top category{" "}
-              <Text bold color="magenta">
-                {stats.top_category ?? "—"}
-              </Text>
-            </Text>
-          </Box>
-          <Text dimColor>? help</Text>
-        </Box>
-      </Panel>
+          </React.Fragment>
+        ))}
+        <Text dimColor>│</Text>
+        <Text>
+          <Text bold color="white">{stats.total}</Text>
+          <Text dimColor> prompts</Text>
+        </Text>
+        <Text>
+          <Text bold color="blue">{sessionCount}</Text>
+          <Text dimColor> sessions</Text>
+        </Text>
+        <Text>
+          <Text dimColor>avg </Text>
+          <Text bold color={scoreColor(stats.avg_score)}>
+            {stats.avg_score || "—"}
+          </Text>
+          <Text dimColor>/10</Text>
+        </Text>
+      </Box>
+      <Text dimColor>? help</Text>
     </Box>
   );
 }
@@ -417,10 +429,12 @@ function ProjectsPanel({
   projects,
   width,
   height,
+  scrollOffset,
 }: {
   projects: ProjectStat[];
   width: number;
   height: number;
+  scrollOffset: number;
 }) {
   if (projects.length === 0) {
     return (
@@ -430,14 +444,21 @@ function ProjectsPanel({
     );
   }
 
+  const innerW = width - 4; // border (2) + paddingX (2)
   const labelW = 10;
+  const countW = 4;
+  const gaps = 2; // two gap={1} separators
   const maxCount = projects[0]?.count ?? 1;
-  const barWidth = Math.max(3, width - labelW - 10);
+  const barWidth = Math.max(3, innerW - labelW - countW - gaps);
+  const maxItems = Math.max(1, Math.floor((height - 3) / 2));
+  const offset = Math.min(scrollOffset, Math.max(0, projects.length - maxItems));
+  const visible = projects.slice(offset, offset + maxItems);
+  const hasMore = projects.length > maxItems;
 
   return (
-    <Panel title="Projects" width={width}>
+    <Panel title={hasMore ? `Projects (${offset + 1}-${Math.min(offset + maxItems, projects.length)}/${projects.length})` : "Projects"} width={width}>
       <Box flexDirection="column" gap={1}>
-      {projects.slice(0, height - 3).map((p) => {
+      {visible.map((p) => {
         const name = p.project.split("/").filter(Boolean).pop() ?? p.project;
         const filled = Math.round((p.count / maxCount) * barWidth);
         const empty = barWidth - filled;
@@ -450,7 +471,7 @@ function ProjectsPanel({
               <Text color="green">{"█".repeat(filled)}</Text>
               <Text dimColor>{"░".repeat(empty)}</Text>
             </Text>
-            <Text bold>{String(p.count).padStart(3)}</Text>
+            <Text bold>{String(p.count).padStart(countW)}</Text>
           </Box>
         );
       })}
@@ -465,22 +486,32 @@ function CategoryPanel({
   stats,
   width,
   height,
+  scrollOffset,
 }: {
   stats: Stats;
   width: number;
   height: number;
+  scrollOffset: number;
 }) {
+  const innerW = width - 4; // border (2) + paddingX (2)
   const labelW = 10;
-  const maxCount = stats.categories[0]?.count ?? 1;
-  const barWidth = Math.max(3, width - labelW - 10);
+  const countW = 4;
+  const gaps = 2; // two gap={1} separators
+  const cats = stats.categories;
+  const maxCount = cats[0]?.count ?? 1;
+  const barWidth = Math.max(3, innerW - labelW - countW - gaps);
+  const maxItems = Math.max(1, Math.floor((height - 3) / 2));
+  const offset = Math.min(scrollOffset, Math.max(0, cats.length - maxItems));
+  const visible = cats.slice(offset, offset + maxItems);
+  const hasMore = cats.length > maxItems;
 
   return (
-    <Panel title="Categories" width={width}>
-      {stats.categories.length === 0 ? (
+    <Panel title={hasMore ? `Categories (${offset + 1}-${Math.min(offset + maxItems, cats.length)}/${cats.length})` : "Categories"} width={width}>
+      {cats.length === 0 ? (
         <Text dimColor>No data</Text>
       ) : (
         <Box flexDirection="column" gap={1}>
-        {stats.categories.slice(0, height - 3).map((c) => {
+        {visible.map((c) => {
           const filled = Math.round((c.count / maxCount) * barWidth);
           const empty = barWidth - filled;
           return (
@@ -490,7 +521,7 @@ function CategoryPanel({
                 <Text color="magenta">{"█".repeat(filled)}</Text>
                 <Text dimColor>{"░".repeat(empty)}</Text>
               </Text>
-              <Text bold>{String(c.count).padStart(3)}</Text>
+              <Text bold>{String(c.count).padStart(countW)}</Text>
             </Box>
           );
         })}
@@ -826,6 +857,7 @@ function HelpOverlay({ width, height }: { width: number; height: number }) {
     ["f", "Cycle session filter"],
     ["g", "Toggle session grouping"],
     ["Tab", "Switch tab"],
+    ["[/]", "Scroll sidebar panels"],
     ["Esc", "Clear all filters"],
     ["d", "Delete selected entry"],
     ["D", "Delete ALL entries (reset)"],
@@ -919,7 +951,7 @@ function Footer({ width, lastRefresh }: { width: number; lastRefresh: Date }) {
       justifyContent="space-between"
     >
       <Text dimColor>
-        ↑↓ navigate Tab switch view p project c category f session g group d del ? help q quit
+        ↑↓ navigate Tab switch view [] scroll sidebar p project c category f session g group d del ? help q quit
       </Text>
       <Text dimColor>
         {lastRefresh.toLocaleTimeString()} │ {POLL_MS / 1000}s poll
@@ -931,34 +963,6 @@ function Footer({ width, lastRefresh }: { width: number; lastRefresh: Date }) {
 // ── Tab Bar ─────────────────────────────────────────────────────────
 
 type Tab = "dashboard" | "trends";
-
-function TabBar({ active, width }: { active: Tab; width: number }) {
-  const tabs: { key: Tab; label: string }[] = [
-    { key: "dashboard", label: "Dashboard" },
-    { key: "trends", label: "Trends" },
-  ];
-
-  return (
-    <Box width={width} paddingX={1}>
-      {tabs.map((t, i) => {
-        const isActive = active === t.key;
-        return (
-          <React.Fragment key={t.key}>
-            {i > 0 && <Text dimColor> │ </Text>}
-            <Text
-              bold={isActive}
-              color={isActive ? "cyan" : "gray"}
-              underline={isActive}
-            >
-              {isActive ? `▸ ${t.label}` : `  ${t.label}`}
-            </Text>
-          </React.Fragment>
-        );
-      })}
-      <Text dimColor>  ⇥ Tab to switch</Text>
-    </Box>
-  );
-}
 
 // ── Trends View ─────────────────────────────────────────────────────
 
@@ -1065,6 +1069,7 @@ function App() {
   const [flash, setFlash] = useState<string | null>(null);
   const [filters, setFilters] = useState<Filters>(emptyFilters);
   const [grouped, setGrouped] = useState(false);
+  const [sidebarScroll, setSidebarScroll] = useState(0);
 
   // Derived: filtered analyses
   const analyses = applyFilters(allAnalyses, filters);
@@ -1189,6 +1194,12 @@ function App() {
       case "switchTab":
         setActiveTab((t) => (t === "dashboard" ? "trends" : "dashboard"));
         break;
+      case "sidebarScrollUp":
+        setSidebarScroll((s) => Math.max(0, s - 1));
+        break;
+      case "sidebarScrollDown":
+        setSidebarScroll((s) => s + 1);
+        break;
       case "cancel":
         if (hasActiveFilters(filters) || grouped) {
           setFilters(emptyFilters);
@@ -1223,18 +1234,15 @@ function App() {
   const topPanelRows = hasActiveFilters(filters) || grouped ? 3 : 0;
   const detailRows = analyses[selectedIdx] ? 3 : 0;
   const flashRows = flash ? 1 : 0;
-  const tableH = rows - 3 - topPanelRows - detailRows - flashRows - 3;
+  const tableH = rows - 1 - topPanelRows - detailRows - flashRows - 3;
   const catH = Math.floor((tableH - 2) * 0.45);
 
   return (
     <Box flexDirection="column" width={columns} height={rows}>
       {isTTY && <KeyboardHandler onAction={handleAction} />}
 
-      {/* Top stats bar */}
-      <StatsBar stats={stats} sessionCount={sessionCount} width={columns} />
-
-      {/* Tab bar */}
-      <TabBar active={activeTab} width={columns} />
+      {/* Top stats + tab bar */}
+      <StatsBar stats={stats} sessionCount={sessionCount} width={columns} activeTab={activeTab} />
 
       {/* Flash message */}
       {flash && (
@@ -1296,11 +1304,13 @@ function App() {
                 projects={projectStats}
                 width={sidebarW}
                 height={Math.floor(catH * 0.5)}
+                scrollOffset={sidebarScroll}
               />
               <CategoryPanel
                 stats={stats}
                 width={sidebarW}
                 height={Math.floor(catH * 0.5)}
+                scrollOffset={sidebarScroll}
               />
               <ScoreDistribution analyses={analyses} width={sidebarW} />
               <ComplexityPanel analyses={analyses} width={sidebarW} />
